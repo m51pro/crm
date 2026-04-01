@@ -99,7 +99,9 @@ export default function Clients() {
             onClick={() => setFilter(f.key)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
               filter === f.key
-                ? "bg-accent text-accent-foreground shadow-sm"
+                ? f.isRed
+                  ? "bg-destructive text-destructive-foreground shadow-sm"
+                  : "bg-accent text-accent-foreground shadow-sm"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >

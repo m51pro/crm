@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,16 @@ export interface ClientData {
   is_blacklisted?: boolean;
   created_at?: string;
   updated_at?: string;
+}
+
+interface ClientContractHistory {
+  id: string;
+  contract_number: string;
+  contract_date: string;
+  client_id: string;
+  property: string;
+  rent_price: number | string;
+  status: string;
 }
 
 interface Props {
@@ -168,16 +179,42 @@ export default function ClientDrawer({ open, onClose, client, onSaved, mode = "e
   const [form, setForm] = useState<ClientData>(emptyClient);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [contractsHistory, setContractsHistory] = useState<ClientContractHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const passportNumberRef = useRef<HTMLInputElement>(null);
   const passportSeriesRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (open) {
       setForm(client ? { ...emptyClient, ...client } : { ...emptyClient });
       setErrors({});
       setIsEditingMode(!client?.id || mode === "edit");
+      setContractsHistory([]);
+      if (client?.id) {
+        fetchHistory(client.id);
+      }
     }
   }, [open, client, mode]);
+
+  const fetchHistory = async (clientId: string) => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/contracts`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setContractsHistory(data.filter((c: { client_id: string }) => c.client_id === clientId) as ClientContractHistory[]);
+      }
+    } catch(e) {
+      console.error(e);
+    }
+    setHistoryLoading(false);
+  };
+
+  const handleCreateContract = () => {
+    onClose();
+    navigate('/contracts', { state: { preselectClient: form } });
+  };
 
   const set = <K extends keyof ClientData>(field: K, value: ClientData[K]) => {
     setForm((p) => ({ ...p, [field]: value }));
@@ -348,9 +385,11 @@ export default function ClientDrawer({ open, onClose, client, onSaved, mode = "e
               )}
             </DialogTitle>
             {isExisting && !isEditingMode && (
-              <Button variant="outline" size="sm" onClick={() => setIsEditingMode(true)} className="rounded-xl h-8">
-                <Pencil className="h-3.5 w-3.5 mr-1.5" /> Редактировать
-              </Button>
+              <div className="mr-8">
+                <Button variant="outline" size="sm" onClick={() => setIsEditingMode(true)} className="rounded-xl h-8">
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" /> Редактировать
+                </Button>
+              </div>
             )}
           </div>
           {!isExisting && (
@@ -539,32 +578,69 @@ export default function ClientDrawer({ open, onClose, client, onSaved, mode = "e
           )}
 
           {/* Common section */}
-          <SectionHeader title="Дополнительно" />
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Доп. информация</Label>
-              <Textarea value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} rows={3} className="focus-visible:ring-accent" />
-            </div>
-            {isEditingMode && (
-              <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
-                  <span className="text-sm font-medium text-destructive">Чёрный список</span>
-                </div>
-                <Switch checked={form.is_blacklisted ?? false} onCheckedChange={(v) => set("is_blacklisted", v)} />
+          {(!isEditingMode && (!form.notes || form.notes.trim() === "") && !form.is_blacklisted) ? null : (
+            <>
+              <SectionHeader title="Дополнительно" />
+              <div className="space-y-3">
+                {(!isEditingMode && (!form.notes || form.notes.trim() === "")) ? null : (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Доп. информация</Label>
+                    {isEditingMode ? (
+                      <Textarea value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)} rows={3} className="focus-visible:ring-accent" />
+                    ) : (
+                      <div className="p-3 bg-muted/30 rounded-md text-sm whitespace-pre-wrap border border-border">{form.notes}</div>
+                    )}
+                  </div>
+                )}
+                {isEditingMode && (
+                  <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      <span className="text-sm font-medium text-destructive">Чёрный список</span>
+                    </div>
+                    <Switch checked={form.is_blacklisted ?? false} onCheckedChange={(v) => set("is_blacklisted", v)} />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
 
-          {/* Contract history stub */}
+          {/* Contract history */}
           {isExisting && (
             <Collapsible className="mt-6">
               <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full">
                 <ChevronDown className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-180" />
-                История договоров (0)
+                История договоров ({contractsHistory.length})
               </CollapsibleTrigger>
-              <CollapsibleContent className="pt-3">
-                <p className="text-xs text-muted-foreground">Договоров пока нет.</p>
+              <CollapsibleContent className="pt-3 space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {historyLoading ? (
+                  <p className="text-xs text-muted-foreground">Загрузка истории...</p>
+                ) : contractsHistory.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Договоров пока нет.</p>
+                ) : (
+                  contractsHistory.map(c => (
+                    <div key={c.id} className="p-3 bg-muted/30 border border-border/50 rounded-lg flex items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-sm">№{c.contract_number}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {c.contract_date ? format(new Date(c.contract_date), "dd.MM.yyyy") : ""}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground flex gap-1 items-center">
+                          <Building2 className="w-3 h-3" />
+                          {c.property === "chunga_changa" ? "Чунга-Чанга" : "Голубая Бухта"}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold">{c.rent_price !== undefined ? Number(c.rent_price).toLocaleString("ru-RU") : 0} ₽</div>
+                        {c.status === "paid" && <span className="text-[10px] text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded font-medium">Оплачен</span>}
+                        {c.status === "not_paid" && <span className="text-[10px] text-red-600 bg-red-50 dark:bg-red-950/30 px-1.5 py-0.5 rounded font-medium">Не оплачен</span>}
+                        {c.status === "partial_paid" && <span className="text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded font-medium">Частично</span>}
+                      </div>
+                    </div>
+                  ))
+                )}
               </CollapsibleContent>
             </Collapsible>
           )}
@@ -602,13 +678,13 @@ export default function ClientDrawer({ open, onClose, client, onSaved, mode = "e
             </div>
           </DialogFooter>
         ) : (
-          <div className="border-t px-6 py-4 flex justify-between gap-4 shrink-0 bg-muted/20">
-            <Button size="lg" variant="outline" onClick={onClose} className="rounded-xl px-8">
+          <div className="border-t px-6 py-4 flex flex-row items-center justify-between gap-4 shrink-0 bg-muted/20">
+            <Button size="lg" variant="outline" onClick={onClose} className="rounded-xl px-8 h-11 shrink-0">
               Закрыть
             </Button>
-            <Button size="lg" className="rounded-xl flex-1 bg-accent text-accent-foreground hover:bg-accent/90 text-[15px] font-black shadow-lg shadow-accent/20">
-              <FileText className="h-5 w-5 mr-2" />
-              Создать договор (В разработке)
+            <Button size="lg" onClick={handleCreateContract} className="rounded-xl px-6 bg-accent text-accent-foreground hover:bg-accent/90 text-[14px] font-black shadow-md shadow-accent/20 h-11 shrink-0 whitespace-nowrap">
+              <FileText className="h-4 w-4 mr-2" />
+              Создать договор
             </Button>
           </div>
         )}

@@ -24,6 +24,15 @@ interface DailyGridProps {
   onRefresh?: () => void;
 }
 
+type RawBooking = Booking & {
+  cottage_id?: string;
+  client_name?: string;
+  client_phone?: string;
+  guest_count?: number;
+  checkin_at?: string;
+  checkout_at?: string;
+};
+
 const CELL_H = 120;
 
 function StatusIndicator({ status }: { status: BookingStatus }) {
@@ -38,19 +47,30 @@ export function DailyGrid({ columns, bookings, date, onRefresh }: DailyGridProps
   const [quickBook, setQuickBook] = useState<string | null>(null);
 
   const bookingMap = useMemo(() => {
-    const map = new Map<string, Booking & { colorClass: string }>();
+    const map = new Map<string, (RawBooking & { colorClass: string, isStartDay: boolean, isEndDay: boolean })[]>();
     bookings.forEach((b, i) => {
+      const rawB = b as RawBooking;
       // Filter by date range for daily grid (fallback checkin_at -> checkInDate)
-      const startStr = b.checkin_at || b.checkInDate;
-      const endStr = b.checkout_at || b.checkOutDate;
+      const startStr = rawB.checkin_at || b.checkInDate;
+      const endStr = rawB.checkout_at || b.checkOutDate;
+      const cottageId = rawB.cottage_id || b.cottageId;
+
+      let isStartDay = false;
+      let isEndDay = false;
 
       if (startStr && endStr) {
         const start = startOfDay(new Date(startStr));
-        const end = endOfDay(new Date(endStr));
+        const end = startOfDay(new Date(endStr));
         const current = startOfDay(date);
         if (!isWithinInterval(current, { start, end })) return;
+
+        isStartDay = current.getTime() === start.getTime();
+        isEndDay = current.getTime() === end.getTime();
       }
-      map.set(b.cottageId, { ...b, colorClass: getBookingColor(i, b.status) });
+      
+      const arr = map.get(cottageId) || [];
+      arr.push({ ...b, colorClass: getBookingColor(i, b.status), isStartDay, isEndDay });
+      map.set(cottageId, arr);
     });
     return map;
   }, [bookings, date]);
@@ -84,61 +104,67 @@ export function DailyGrid({ columns, bookings, date, onRefresh }: DailyGridProps
 
           {/* Cells */}
           {columns.map((col) => {
-            const booking = bookingMap.get(col.id);
+            const cellBookings = bookingMap.get(col.id) || [];
             return (
               <div
                 key={`cell-${col.id}`}
                 className={cn(
                   "border-r relative p-1",
-                  !booking && "hover:bg-accent/20 cursor-pointer transition-colors"
+                  cellBookings.length === 0 && "hover:bg-accent/20 cursor-pointer transition-colors"
                 )}
                 style={{ minHeight: CELL_H }}
                 onClick={() => {
-                  if (!booking) setQuickBook(col.id);
+                  if (cellBookings.length === 0) setQuickBook(col.id);
                 }}
               >
-                {booking ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        className={cn(
-                          "rounded px-2 py-2 h-full cursor-pointer shadow-sm",
-                          booking.colorClass
-                        )}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedBooking(booking);
-                        }}
-                      >
-                        <p className="text-sm font-bold truncate">
-                          {booking.clientName}
-                          <StatusIndicator status={booking.status} />
-                        </p>
-                        <p className="text-[11px] opacity-90 mt-1 font-extrabold tracking-tight">
-                          {booking.phone}
-                        </p>
-                        {booking.status === "pre_booking" && (
-                          <p className="text-[9px] text-muted-foreground mt-0.5 uppercase tracking-wide">
-                            Предбронь
-                          </p>
-                        )}
-                        {booking.checkOutDate && (
-                          <p className="text-[10px] mt-2 opacity-70">
-                            → до{" "}
-                            {format(new Date(booking.checkOutDate), "d MMM", {
-                              locale: ru,
-                            })}
-                          </p>
-                        )}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs space-y-1">
-                      <p className="font-semibold">{booking.clientName}</p>
-                      <p>{booking.phone}</p>
-                      {booking.contractNumber && <p>Договор: {booking.contractNumber}</p>}
-                      <p>{booking.guestCount} чел.</p>
-                    </TooltipContent>
-                  </Tooltip>
+                {cellBookings.length > 0 ? (
+                  cellBookings.map((booking, bIdx) => {
+                    const rawBooking = booking as RawBooking;
+                    let heightClass = "inset-1"; // full day
+                    if (booking.isStartDay && !booking.isEndDay) heightClass = "top-[28%] bottom-1 inset-x-1"; // ~72% height
+                    if (booking.isEndDay && !booking.isStartDay) heightClass = "top-1 bottom-[75%] inset-x-1"; // 24% height
+
+                    return (
+                      <Tooltip key={bIdx}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={cn(
+                              "absolute rounded px-2 py-1.5 flex flex-col cursor-pointer shadow-sm overflow-hidden",
+                              booking.colorClass,
+                              heightClass,
+                              booking.isEndDay && !booking.isStartDay && "py-0.5 opacity-90"
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedBooking(booking);
+                            }}
+                          >
+                            <p className="text-sm font-bold truncate leading-tight">
+                              {booking.clientName || rawBooking.client_name}
+                              <StatusIndicator status={booking.status} />
+                            </p>
+                            {!booking.isEndDay && (
+                              <p className="text-[11px] opacity-90 mt-0.5 font-extrabold tracking-tight truncate">
+                                {booking.phone || rawBooking.client_phone}
+                              </p>
+                            )}
+                            {booking.status === "pre_booking" && !booking.isEndDay && (
+                              <p className="text-[9px] text-muted-foreground mt-0.5 uppercase tracking-wide truncate">
+                                Предбронь
+                              </p>
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs space-y-1 z-50">
+                          <p className="font-semibold">{booking.clientName || rawBooking.client_name}</p>
+                          <p>{booking.phone || rawBooking.client_phone}</p>
+                          <p>{rawBooking.guest_count || booking.guestCount} чел.</p>
+                          {rawBooking.checkin_at && <p>Заезд: {format(new Date(rawBooking.checkin_at), "d MMM HH:mm", { locale: ru })}</p>}
+                          {rawBooking.checkout_at && <p>Выезд: {format(new Date(rawBooking.checkout_at), "d MMM HH:mm", { locale: ru })}</p>}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })
                 ) : (
                   <div className="flex items-center justify-center h-full">
                     <span className="text-xs text-muted-foreground">Свободен</span>

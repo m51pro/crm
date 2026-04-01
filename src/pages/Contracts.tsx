@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +63,25 @@ export default function Contracts() {
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.state?.preselectClient) {
+      const c = location.state.preselectClient;
+      setSelectedContract({
+        id: "",
+        client_id: c.id,
+        client_name: c.client_type === "individual" ? [c.last_name, c.first_name, c.middle_name].filter(Boolean).join(" ") : c.org_name,
+        client_phone: c.phone || c.contact_phone || "",
+        status: "not_paid",
+        property: "chunga_changa"
+      } as unknown as Contract);
+      setModalOpen(true);
+      // Clear state so it doesn't trigger on reload
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   const fetchContracts = async () => {
     setLoading(true);

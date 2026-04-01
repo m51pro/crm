@@ -170,6 +170,83 @@ export type Database = {
         }
         Relationships: []
       }
+      contracts: {
+        Row: {
+          check_in_date: string | null
+          check_in_hour: number | null
+          check_out_date: string | null
+          check_out_hour: number | null
+          client_id: string | null
+          client_name: string
+          client_phone: string | null
+          contract_date: string
+          contract_number: string
+          cottage_id: string
+          created_at: string
+          guest_count: number | null
+          id: string
+          is_daily: boolean
+          notes: string | null
+          prepayment_amount: number | null
+          property: string
+          status: Database["public"]["Enums"]["contract_status"]
+          total_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          check_in_date?: string | null
+          check_in_hour?: number | null
+          check_out_date?: string | null
+          check_out_hour?: number | null
+          client_id?: string | null
+          client_name: string
+          client_phone?: string | null
+          contract_date?: string
+          contract_number: string
+          cottage_id: string
+          created_at?: string
+          guest_count?: number | null
+          id?: string
+          is_daily?: boolean
+          notes?: string | null
+          prepayment_amount?: number | null
+          property?: string
+          status?: Database["public"]["Enums"]["contract_status"]
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          check_in_date?: string | null
+          check_in_hour?: number | null
+          check_out_date?: string | null
+          check_out_hour?: number | null
+          client_id?: string | null
+          client_name?: string
+          client_phone?: string | null
+          contract_date?: string
+          contract_number?: string
+          cottage_id?: string
+          created_at?: string
+          guest_count?: number | null
+          id?: string
+          is_daily?: boolean
+          notes?: string | null
+          prepayment_amount?: number | null
+          property?: string
+          status?: Database["public"]["Enums"]["contract_status"]
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -179,6 +256,7 @@ export type Database = {
     }
     Enums: {
       booking_status: "pre_booking" | "contract_signed" | "contract_paid"
+      contract_status: "pre_booking" | "signed" | "paid" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -307,6 +385,7 @@ export const Constants = {
   public: {
     Enums: {
       booking_status: ["pre_booking", "contract_signed", "contract_paid"],
+      contract_status: ["pre_booking", "signed", "paid", "cancelled"],
     },
   },
 } as const

@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DateNavBar } from "@/components/chess/DateNavBar";
 import { HourlyGrid } from "@/components/chess/HourlyGrid";
 import { DailyGrid } from "@/components/chess/DailyGrid";
+import { BookingLegend } from "@/components/chess/BookingLegend";
 import {
   CHUNGA_CHANGA_COTTAGES,
   GB_COTTAGES,
@@ -28,20 +29,23 @@ export default function Chess() {
 
       <div className="flex-1 overflow-auto p-6">
         <Tabs defaultValue="chunga" className="space-y-4">
-          <TabsList className="bg-muted">
-            <TabsTrigger
-              value="chunga"
-              className="data-[state=active]:bg-forest data-[state=active]:text-forest-foreground"
-            >
-              Чунга-Чанга
-            </TabsTrigger>
-            <TabsTrigger
-              value="golubaya"
-              className="data-[state=active]:bg-teal data-[state=active]:text-teal-foreground"
-            >
-              Голубая Бухта
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <TabsList className="bg-muted">
+              <TabsTrigger
+                value="chunga"
+                className="data-[state=active]:bg-forest data-[state=active]:text-forest-foreground"
+              >
+                Чунга-Чанга
+              </TabsTrigger>
+              <TabsTrigger
+                value="golubaya"
+                className="data-[state=active]:bg-teal data-[state=active]:text-teal-foreground"
+              >
+                Голубая Бухта
+              </TabsTrigger>
+            </TabsList>
+            <BookingLegend />
+          </div>
 
           <TabsContent value="chunga">
             <HourlyGrid
@@ -54,7 +58,6 @@ export default function Chess() {
           </TabsContent>
 
           <TabsContent value="golubaya" className="space-y-6">
-            {/* Section A: Cottages (daily) */}
             <div>
               <h3 className="font-heading text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
                 Коттеджи
@@ -62,7 +65,6 @@ export default function Chess() {
               <DailyGrid columns={GB_COTTAGES} bookings={MOCK_BOOKINGS_GB_COTTAGES} date={date} />
             </div>
 
-            {/* Section B: Banya & Furako (hourly) */}
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-px flex-1 bg-border" />

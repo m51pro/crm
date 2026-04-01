@@ -2,14 +2,15 @@ import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { type Booking, getBookingColor } from "@/lib/chess-data";
+import { Check } from "lucide-react";
+import { type Booking, type BookingStatus, getBookingColor, parseColumnName } from "@/lib/chess-data";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { BookingDrawer } from "./BookingDrawer";
-import { QuickBookingForm } from "./QuickBookingForm";
+import { PreBookingForm } from "./PreBookingForm";
 
 interface Column {
   id: string;
@@ -24,6 +25,13 @@ interface DailyGridProps {
 
 const CELL_H = 120;
 
+function StatusIndicator({ status }: { status: BookingStatus }) {
+  if (status === "contract_paid") {
+    return <Check className="inline h-3 w-3 text-emerald-600 ml-1" />;
+  }
+  return null;
+}
+
 export function DailyGrid({ columns, bookings, date }: DailyGridProps) {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [quickBook, setQuickBook] = useState<string | null>(null);
@@ -31,7 +39,7 @@ export function DailyGrid({ columns, bookings, date }: DailyGridProps) {
   const bookingMap = useMemo(() => {
     const map = new Map<string, Booking & { colorClass: string }>();
     bookings.forEach((b, i) => {
-      map.set(b.cottageId, { ...b, colorClass: getBookingColor(i) });
+      map.set(b.cottageId, { ...b, colorClass: getBookingColor(i, b.status) });
     });
     return map;
   }, [bookings]);
@@ -46,14 +54,22 @@ export function DailyGrid({ columns, bookings, date }: DailyGridProps) {
           }}
         >
           {/* Headers */}
-          {columns.map((col) => (
-            <div
-              key={col.id}
-              className="sticky top-0 z-10 bg-card border-b border-r px-3 py-2 text-center"
-            >
-              <p className="font-heading text-xs font-semibold">{col.name}</p>
-            </div>
-          ))}
+          {columns.map((col) => {
+            const { label, number } = parseColumnName(col.name);
+            return (
+              <div
+                key={col.id}
+                className="sticky top-0 z-10 bg-card border-b border-r px-3 py-2 text-center flex flex-col items-center justify-center"
+              >
+                {label && (
+                  <p className="text-[11px] font-normal text-muted-foreground uppercase tracking-wide leading-tight">
+                    {label}
+                  </p>
+                )}
+                <p className="text-lg font-bold font-heading leading-tight">{number}</p>
+              </div>
+            );
+          })}
 
           {/* Cells */}
           {columns.map((col) => {
@@ -75,16 +91,27 @@ export function DailyGrid({ columns, bookings, date }: DailyGridProps) {
                     <TooltipTrigger asChild>
                       <div
                         className={cn(
-                          "rounded border px-2 py-2 h-full cursor-pointer",
-                          booking.colorClass
+                          "rounded px-2 py-2 h-full cursor-pointer",
+                          booking.colorClass,
+                          booking.status === "pre_booking"
+                            ? "border-dashed border-2"
+                            : "border border-solid"
                         )}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedBooking(booking);
                         }}
                       >
-                        <p className="text-xs font-semibold truncate">{booking.clientName}</p>
+                        <p className="text-xs font-semibold truncate">
+                          {booking.clientName}
+                          <StatusIndicator status={booking.status} />
+                        </p>
                         <p className="text-[10px] opacity-80 mt-0.5">{booking.phone}</p>
+                        {booking.status === "pre_booking" && (
+                          <p className="text-[9px] text-muted-foreground mt-0.5 uppercase tracking-wide">
+                            Предбронь
+                          </p>
+                        )}
                         {booking.checkOutDate && (
                           <p className="text-[10px] mt-2 opacity-70">
                             → до{" "}
@@ -114,7 +141,7 @@ export function DailyGrid({ columns, bookings, date }: DailyGridProps) {
       </div>
 
       <BookingDrawer booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
-      <QuickBookingForm
+      <PreBookingForm
         open={!!quickBook}
         cottageId={quickBook ?? undefined}
         hour={undefined}

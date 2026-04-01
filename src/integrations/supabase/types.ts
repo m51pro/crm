@@ -74,6 +74,102 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          bank_name: string | null
+          bik: string | null
+          birth_date: string | null
+          client_type: string
+          contact_email: string | null
+          contact_person: string | null
+          contact_phone: string | null
+          corr_account: string | null
+          created_at: string
+          email: string | null
+          first_name: string | null
+          id: string
+          inn: string | null
+          is_blacklisted: boolean
+          kpp: string | null
+          last_name: string | null
+          legal_address: string | null
+          middle_name: string | null
+          notes: string | null
+          ogrn: string | null
+          org_name: string | null
+          passport_issued_by: string | null
+          passport_issued_date: string | null
+          passport_number: string | null
+          passport_series: string | null
+          phone: string | null
+          registration_address: string | null
+          settlement_account: string | null
+          updated_at: string
+        }
+        Insert: {
+          bank_name?: string | null
+          bik?: string | null
+          birth_date?: string | null
+          client_type?: string
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          corr_account?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          inn?: string | null
+          is_blacklisted?: boolean
+          kpp?: string | null
+          last_name?: string | null
+          legal_address?: string | null
+          middle_name?: string | null
+          notes?: string | null
+          ogrn?: string | null
+          org_name?: string | null
+          passport_issued_by?: string | null
+          passport_issued_date?: string | null
+          passport_number?: string | null
+          passport_series?: string | null
+          phone?: string | null
+          registration_address?: string | null
+          settlement_account?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bank_name?: string | null
+          bik?: string | null
+          birth_date?: string | null
+          client_type?: string
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          corr_account?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          inn?: string | null
+          is_blacklisted?: boolean
+          kpp?: string | null
+          last_name?: string | null
+          legal_address?: string | null
+          middle_name?: string | null
+          notes?: string | null
+          ogrn?: string | null
+          org_name?: string | null
+          passport_issued_by?: string | null
+          passport_issued_date?: string | null
+          passport_number?: string | null
+          passport_series?: string | null
+          phone?: string | null
+          registration_address?: string | null
+          settlement_account?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

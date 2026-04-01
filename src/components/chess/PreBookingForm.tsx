@@ -84,17 +84,15 @@ export function PreBookingForm({ open, cottageId, hour, isDaily, onClose }: PreB
             <Label className="text-xs">
               Телефон <span className="text-destructive">*</span>
             </Label>
-            <InputMask
-              mask="+7 (999) 999-99-99"
+            <Input
+              placeholder="+7 (___) ___-__-__"
               value={phone}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
-              maskChar="_"
-            >
-              {/* @ts-ignore - react-input-mask children render prop */}
-              {(inputProps: any) => (
-                <Input {...inputProps} placeholder="+7 (___) ___-__-__" />
-              )}
-            </InputMask>
+              onChange={(e) => {
+                let val = e.target.value;
+                if (!val.startsWith("+7")) val = "+7" + val.replace(/^\+?7?/, "");
+                setPhone(val);
+              }}
+            />
           </div>
 
           {/* Optional fields */}

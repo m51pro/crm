@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { formatHour } from "@/lib/chess-data";
 import { toast } from "sonner";
-import InputMask from "react-input-mask";
 
 interface PreBookingFormProps {
   open: boolean;

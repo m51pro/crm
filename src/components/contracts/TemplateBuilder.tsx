@@ -46,7 +46,8 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from "@/components/ui/popover";
-import { CKEditorComponent } from "./CKEditorComponent";
+import { TiptapEditor } from "./TiptapEditor";
+import { API_URL } from '@/lib/api';
 
 interface TemplateBuilderProps {
   onBack: () => void;
@@ -263,13 +264,24 @@ const VARIABLE_GROUPS = [
       { id: 'else', label: 'Иначе (Альтернатива)' },
       { id: '/if', label: 'Конец условия' },
     ]
+  },
+  {
+    id: "signatures",
+    label: "ПОДПИСИ СТОРОН",
+    icon: <Sparkles className="h-4 w-4 text-rose-500" />,
+    variables: [
+      { id: 'signatures_table', label: 'Блок подписей (2 колонки)' },
+      { id: 'my_sign_stamp', label: 'Место для печати' },
+      { id: 'my_stamp', label: 'Ваша печать (картинка)' },
+      { id: 'my_signature', label: 'Ваша подпись (картинка)' },
+    ]
   }
 ];
 
 export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
   const [title, setTitle] = useState("Новый шаблон договора");
   const [content, setContent] = useState(DEFAULT_CONTENT);
-  const [editorInstance, setEditorInstance] = useState<any>(null);
+  const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -281,21 +293,23 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
     marginBottom: 20,
     marginLeft: 20,
     marginRight: 10,
-    stampBase64: ""
+    stampBase64: "",
+    signatureBase64: ""
   });
 
   useEffect(() => {
     if (!templateId) return;
     setIsLoading(true);
-    fetch(`http://localhost:3000/api/templates/${templateId}`)
+    fetch(`${API_URL}/templates/${templateId}`)
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
           setTitle(data.data.title || "Без названия");
-          setContent(data.data.html_content || DEFAULT_CONTENT);
+          const html = data.data.html_content || DEFAULT_CONTENT;
+          setContent(html);
           setPageSettings(prev => ({ ...prev, ...data.data.settings }));
           if (editorInstance) {
-            editorInstance.setData(data.data.html_content || DEFAULT_CONTENT);
+            editorInstance.commands.setContent(html);
           }
         }
       })
@@ -306,7 +320,7 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const res = await fetch("http://localhost:3000/api/templates", {
+      const res = await fetch(`${API_URL}/templates`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -343,7 +357,7 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
       try {
         const result = await mammoth.convertToHtml({ arrayBuffer });
         setContent(result.value);
-        if (editorInstance) editorInstance.setData(result.value);
+        if (editorInstance) editorInstance.commands.setContent(result.value);
         toast.success("Документ успешно импортирован!");
       } catch (error) {
         toast.error("Ошибка при чтении .docx файла");
@@ -355,24 +369,51 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
 
   const livePreviewHtml = useMemo(() => {
     try {
-      const templateString = content.replace(
-        /<span[^>]*data-type="variable"[^>]*data-id="([^"]+)"[^>]*>.*?<\/span>/g,
-        '{{$1}}'
-      );
+      // Универсальное регулярное выражение для обработки переменных Tiptap
+      const templateString = content.replace(/<span\s+[^>]*data-type="variable"[^>]*>.*?<\/span>/g, (match) => {
+        const idMatch = match.match(/data-id="([^"]+)"/);
+        const id = idMatch ? idMatch[1] : '';
+        if (id === 'my_stamp' || id === 'my_signature') {
+           const src = id === 'my_stamp' ? pageSettings.stampBase64 : pageSettings.signatureBase64;
+           if (src) return `<img src="${src}" style="max-height: 60px; object-fit: contain; mix-blend-mode: multiply; vertical-align: middle;" />`;
+        }
+        return idMatch ? `{{${idMatch[1]}}}` : match;
+      });
+      
       const template = Handlebars.compile(templateString);
       return template(MOCK_DATA);
     } catch (e) {
       return "<div class='text-red-500 font-bold'>Ошибка рендера шаблона. Проверьте синтаксис.</div>";
     }
-  }, [content]);
+  }, [content, pageSettings.stampBase64, pageSettings.signatureBase64]);
 
-  const insertVariable = (id: string, _label: string) => {
+  const insertVariable = (id: string, label: string) => {
     if (editorInstance) {
-      editorInstance.model.change((writer: any) => {
-        const insertPosition = editorInstance.model.document.selection.getFirstPosition();
-        writer.insertText(`{{${id}}}`, insertPosition);
-      });
-      editorInstance.editing.view.focus();
+      if (id === 'signatures_table') {
+        editorInstance.commands.insertContent(`
+          <table style="width: 100%; border: none !important;">
+            <tbody>
+              <tr>
+                <td style="width: 50%; border: none !important; padding: 10px 0;">
+                  <strong>АРЕНДОДАТЕЛЬ:</strong><br><br>
+                  {{my_signature}} {{my_stamp}}<br>
+                  ________________ / {{my_signatory_role}} /
+                </td>
+                <td style="width: 50%; border: none !important; padding: 10px 0;">
+                  <strong>АРЕНДАТОР:</strong><br><br>
+                  ________________ / {{client_name}} /
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        `);
+      } else if (id === 'my_sign_stamp') {
+        editorInstance.commands.insertContent('<p style="text-align: right;">М.П. ________________</p>');
+      } else {
+        // @ts-expect-error - custom command
+        editorInstance.commands.chessInsertVariable({ id, label });
+      }
+      editorInstance.commands.focus();
     }
   };
 
@@ -381,6 +422,15 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => setPageSettings(s => ({ ...s, stampBase64: reader.result as string }));
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPageSettings(s => ({ ...s, signatureBase64: reader.result as string }));
       reader.readAsDataURL(file);
     }
   };
@@ -426,7 +476,7 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
                     className="w-full justify-start text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 h-9 rounded-lg"
                     onClick={() => {
                        setContent(preset.html);
-                       if (editorInstance) editorInstance.setData(preset.html);
+                       if (editorInstance) editorInstance.commands.setContent(preset.html);
                        toast.success(`Загружен макет: ${preset.title}`);
                     }}
                   >
@@ -536,6 +586,18 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
                   )}
                   <p className="text-[9px] text-muted-foreground/60 leading-tight">Загрузите PNG с прозрачным фоном. Она будет добавлена на каждую страницу при генерации PDF.</p>
                 </div>
+                
+                <div className="space-y-3 pt-6 border-t border-white/5">
+                  <Label className="text-[10px] font-black text-rose-400 uppercase flex items-center gap-2"><Sparkles className="h-4 w-4" /> ВАША ПОДПИСЬ</Label>
+                  <Input type="file" accept="image/*" onChange={handleSignatureUpload} className="text-xs bg-zinc-900 border-white/5" />
+                  {pageSettings.signatureBase64 && (
+                    <div className="mt-2 p-4 bg-white/5 border border-white/5 rounded-xl flex flex-col items-center gap-3">
+                      <img src={pageSettings.signatureBase64} alt="Signature" className="max-h-[80px] object-contain mix-blend-multiply transition-all grayscale contrast-[1.2]" />
+                      <Button variant="ghost" size="sm" onClick={() => setPageSettings(s => ({...s, signatureBase64: ""}))} className="w-full text-xs text-destructive hover:bg-destructive/10">УДАЛИТЬ ПОДПИСЬ</Button>
+                    </div>
+                  )}
+                  <p className="text-[9px] text-muted-foreground/60 leading-tight">Загрузите вашу рукописную подпись в формате PNG (желательно без фона).</p>
+                </div>
               </div>
             </DialogContent>
           </Dialog>
@@ -556,10 +618,12 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT COMPONENT: EDITOR */}
         <div className="flex-1 border-r border-border/40 flex flex-col bg-[#070708]">
-          <CKEditorComponent 
+          <TiptapEditor 
             content={content} 
             onChange={setContent} 
             onInit={setEditorInstance} 
+            stampBase64={pageSettings.stampBase64}
+            signatureBase64={pageSettings.signatureBase64}
           />
         </div>
 

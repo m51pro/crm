@@ -3,6 +3,7 @@ import { convert as convertAmountToWords } from "number-to-words-ru";
 import { incline } from "lvovich";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { API_URL } from "@/lib/api";
 
 // Highlight missing placeholders with [?]
 Handlebars.registerHelper('helperMissing', function() {
@@ -56,10 +57,10 @@ export const prepareTemplateVariables = (form: Record<string, unknown>, clients:
     passport: String(clientMatch.passport || ""),
   };
   
-  const rentPrice = Number(form.rent_price || 0);
+  const grossAmount = Number(form.total || form.rent_price || 0);
   const prepayment = Number(form.prepayment || 0);
-  const vatRate = 0.20; // 20% НДС по умолчанию
-  const vatAmount = rentPrice * vatRate;
+  const vatRate = 0.05; // 5% НДС (включен в стоимость)
+  const vatAmount = grossAmount * (5 / 105);
 
   const toWords = (num: number) => {
     try {
@@ -74,9 +75,9 @@ export const prepareTemplateVariables = (form: Record<string, unknown>, clients:
     // New Flat Variables (as requested)
     doc_number: form.contract_number || "",
     doc_date: format(new Date(), "dd MMMM yyyy", { locale: ru }),
-    doc_amount: rentPrice.toString(),
+    doc_amount: grossAmount.toString(),
     vat_amount: vatAmount.toFixed(2),
-    doc_amount_words: toWords(rentPrice),
+    doc_amount_words: toWords(grossAmount),
     vat_amount_words: toWords(Math.floor(vatAmount)),
     doc_prepayment: prepayment.toString(),
     deal_start: form.checkin_at_date && typeof form.checkin_at_date === "string" ? format(new Date(form.checkin_at_date), "dd.MM.yyyy") : "",
@@ -132,7 +133,7 @@ export const prepareTemplateVariables = (form: Record<string, unknown>, clients:
       days: form.guest_count || 1,
       rent_price: form.rent_price || "0",
       prepayment: form.prepayment || "0",
-      total_due: (rentPrice + Number(form.sauna_price || 0) + Number(form.hot_tub_price || 0) - prepayment).toString(),
+      total_due: (grossAmount - prepayment).toString(),
     },
     property: {
       name: form.property === "chunga_changa" ? "Чунга-Чанга" : form.property === "gb_banya" ? "ГБ Баня" : "Голубая Бухта"
@@ -154,7 +155,7 @@ export const prepareTemplateVariables = (form: Record<string, unknown>, clients:
 
 export const generatePdfFromHtml = async (templateId: string, formContext: Record<string, unknown>, clients: Record<string, unknown>[]) => {
     try {
-        const res = await fetch(`http://localhost:3000/api/templates/${templateId}`);
+        const res = await fetch(`${API_URL}/templates/${templateId}`);
         const data = await res.json();
         
         if (!data.success || !data.data) {
@@ -202,8 +203,9 @@ export const generatePdfFromHtml = async (templateId: string, formContext: Recor
                 .prose p { margin: 0 0 0.5em 0; }
                 .prose strong { font-weight: bold; }
                 .prose h1, .prose h2, .prose h3 { margin: 1em 0 0.5em 0; text-align: center; }
-                table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
-                table, th, td { border: 1px solid black; padding: 4px; }
+                table { border-collapse: collapse; width: 100%; margin-bottom: 1em; table-layout: fixed; }
+                table, th, td { border: 1px solid #000; padding: 8px; vertical-align: top; }
+                hr { border: none; border-top: 1px solid #000; margin: 10px 0; }
               </style>
             </head>
             <body>

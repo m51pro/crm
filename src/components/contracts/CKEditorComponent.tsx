@@ -5,7 +5,7 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 interface CKEditorComponentProps {
   content: string;
   onChange: (data: string) => void;
-  onInit?: (editor: any) => void;
+  onInit?: (editor: unknown) => void;
 }
 
 export function CKEditorComponent({ content, onChange, onInit }: CKEditorComponentProps) {
@@ -51,30 +51,69 @@ export function CKEditorComponent({ content, onChange, onInit }: CKEditorCompone
 
         /* Тулбар стилево под темную тему CRM */
         .ck-toolbar {
-          background: rgba(25, 25, 25, 0.9) !important;
+          background: rgba(20, 20, 22, 0.95) !important;
           border: 1px solid rgba(255, 255, 255, 0.1) !important;
           backdrop-filter: blur(10px) !important;
-          border-radius: 99px !important;
-          padding: 5px 15px !important;
+          border-radius: 16px !important;
+          padding: 4px 8px !important;
           margin-bottom: 20px !important;
           position: sticky !important;
           top: 10px !important;
           z-index: 100 !important;
           display: flex !important;
           justify-content: center !important;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
         }
         
         .ck-toolbar__items {
-            justify-content: center !important;
+          justify-content: center !important;
+          background: transparent !important;
         }
         
-        .ck-button {
-            color: white !important;
-            border-radius: 50% !important;
+        .ck.ck-button {
+          color: rgba(255, 255, 255, 0.7) !important;
+          border-radius: 8px !important;
+          cursor: pointer !important;
+          transition: all 0.2s ease !important;
+        }
+
+        .ck.ck-button:hover {
+          background: rgba(255, 255, 255, 0.1) !important;
+          color: white !important;
+        }
+
+        .ck.ck-button.ck-on {
+          background: rgba(255, 255, 255, 0.15) !important;
+          color: #3b82f6 !important;
+        }
+
+        /* Исправление для выпадающих списков (Paragraph и др.) */
+        .ck.ck-dropdown__button {
+          background: transparent !important;
+          color: white !important;
+        }
+        
+        .ck.ck-list {
+          background: #1a1a1c !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .ck.ck-list__item .ck-button {
+          color: rgba(255, 255, 255, 0.8) !important;
+          border-radius: 0 !important;
+        }
+
+        .ck.ck-list__item .ck-button:hover {
+          background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .ck.ck-toolbar__separator {
+          background: rgba(255, 255, 255, 0.1) !important;
         }
       `}</style>
       <CKEditor
-        editor={ClassicEditor}
+        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+        editor={ClassicEditor as any}
         data={content}
         config={{
           toolbar: [

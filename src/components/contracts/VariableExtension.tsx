@@ -1,35 +1,66 @@
 import { mergeAttributes, Node, ReactNodeViewRenderer, NodeViewProps, NodeViewWrapper } from '@tiptap/react'
 
 export interface VariableOptions {
-  HTMLAttributes: Record<string, any>
+  HTMLAttributes: Record<string, unknown>
+  stampBase64?: string
+  signatureBase64?: string
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
-    variable: {
-      insertVariable: (options: { id: string; label: string }) => ReturnType
+    chessVariable: {
+      chessInsertVariable: (options: { id: string; label: string }) => ReturnType
     }
   }
 }
 
 const VariableComponent = (props: NodeViewProps) => {
+  const { id, label } = props.node.attrs
+  const options = props.extension.options as VariableOptions
+  
+  const isStamp = id === 'my_stamp'
+  const isSignature = id === 'my_signature'
+  const imageSrc = isStamp ? options.stampBase64 : (isSignature ? options.signatureBase64 : null)
+
+  if (imageSrc) {
+    return (
+      <NodeViewWrapper
+        as="span"
+        className="inline-block align-middle select-none cursor-default relative group"
+        contentEditable={false}
+        data-type="variable"
+        data-id={id}
+      >
+        <img 
+          src={imageSrc} 
+          alt={label || id} 
+          className={`max-h-[60px] object-contain mix-blend-multiply pointer-events-none transition-all ${isStamp ? 'w-[80px]' : 'w-[120px]'}`} 
+          style={{ verticalAlign: 'middle' }}
+        />
+        <div className="absolute -top-4 left-0 bg-amber-500 text-white text-[8px] px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          {label || id}
+        </div>
+      </NodeViewWrapper>
+    )
+  }
+
   return (
     <NodeViewWrapper
       as="span"
-      className="inline-flex items-center align-middle bg-accent/20 text-accent font-mono text-[11px] px-1.5 py-0.5 rounded border border-accent/30 mx-1 select-none cursor-default"
+      className="inline-flex items-center align-middle bg-amber-500/20 text-amber-500 font-mono text-[11px] px-1.5 py-0.5 rounded-md border border-amber-500/30 mx-1 select-none cursor-default"
       contentEditable={false}
       data-type="variable"
-      data-id={props.node.attrs.id}
+      data-id={id}
     >
       <span className="opacity-50 mr-0.5 font-bold">{'{{'}</span>
-      <span className="font-bold">{props.node.attrs.label || props.node.attrs.id}</span>
+      <span className="font-bold">{label || id}</span>
       <span className="opacity-50 ml-0.5 font-bold">{'}}'}</span>
     </NodeViewWrapper>
   )
 }
 
 export const VariableExtension = Node.create<VariableOptions>({
-  name: 'variable',
+  name: 'chessVariable',
 
   group: 'inline',
 
@@ -86,7 +117,7 @@ export const VariableExtension = Node.create<VariableOptions>({
 
   addCommands() {
     return {
-      insertVariable:
+      chessInsertVariable:
         ({ id, label }) =>
         ({ commands }) => {
           return commands.insertContent({

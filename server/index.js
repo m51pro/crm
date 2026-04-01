@@ -157,6 +157,58 @@ async function initDb() {
   return db;
 }
 
+// Помощник для синхронизации броней с договором
+async function syncBookingsWithContract(db, contractId, data) {
+  // Обновляем шахматку
+  await db.run("DELETE FROM bookings WHERE contract_id = ?", [contractId]);
+  if (data.status === "cancelled") return;
+
+  const statusMap = { 
+    'paid': 'contract_paid', 
+    'partial_paid': 'contract_signed', 
+    'not_paid': 'contract_signed', 
+    'pre_booking': 'pre_booking' 
+  };
+  const finalStatus = statusMap[data.status] || data.status;
+
+  const insertBooking = async (prop, cot_id, checkin, checkout, guests) => {
+    if (!checkin || !checkout) return;
+    
+    let inHour = null;
+    let outHour = null;
+    try {
+      if (checkin.includes('T')) inHour = parseInt(checkin.split('T')[1].split(':')[0], 10);
+      if (checkout.includes('T')) outHour = parseInt(checkout.split('T')[1].split(':')[0], 10);
+    } catch(e) {}
+
+    await db.run(
+      `INSERT INTO bookings (id, contract_id, cottage_id, property, client_name, client_phone, checkin_at, checkout_at, check_in_hour, check_out_hour, guest_count, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [randomUUID(), contractId, cot_id, prop, data.client_name, data.client_phone, checkin, checkout, inHour, outHour, guests || 1, finalStatus]
+    );
+  };
+
+  if (data.property === "chunga_changa") {
+    if (data.cottage_included !== false && data.cottage_id) {
+      await insertBooking("chunga", data.cottage_id, data.checkin_at, data.checkout_at, data.guest_count);
+    }
+  } else if (data.property === "golubaya_bukhta") {
+    if (data.cottage_included !== false && data.cottage_id) {
+      await insertBooking("gb_cottages", data.cottage_id, data.checkin_at, data.checkout_at, data.guest_count);
+    }
+    if (data.sauna_included) {
+      const s_in = data.sauna_date && data.sauna_time_from ? `${data.sauna_date}T${data.sauna_time_from}:00` : null;
+      const s_out = data.sauna_date && data.sauna_time_to ? `${data.sauna_date}T${data.sauna_time_to}:00` : null;
+      await insertBooking("gb_banya", "gb-banya", s_in, s_out, data.sauna_guests);
+    }
+    if (data.hot_tub_included) {
+      const h_in = data.hot_tub_date && data.hot_tub_time_from ? `${data.hot_tub_date}T${data.hot_tub_time_from}:00` : null;
+      const h_out = data.hot_tub_date && data.hot_tub_time_to ? `${data.hot_tub_date}T${data.hot_tub_time_to}:00` : null;
+      await insertBooking("gb_banya", "gb-furako", h_in, h_out, data.hot_tub_guests);
+    }
+  }
+}
+
 let db;
 initDb().then((database) => {
   db = database;
@@ -299,49 +351,7 @@ app.post("/api/contracts", async (req, res) => {
       ]
     );
 
-    // Обновляем шахматку
-    await db.run("DELETE FROM bookings WHERE contract_id = ?", [id]);
-    if (data.status !== "cancelled") {
-      const statusMap = { 'paid': 'contract_paid', 'partial_paid': 'contract_signed', 'not_paid': 'contract_signed', 'pre_booking': 'pre_booking' };
-      const finalStatus = statusMap[data.status] || data.status;
-
-      const insertBooking = async (prop, cot_id, checkin, checkout, guests) => {
-        if (!checkin || !checkout) return;
-        
-        let inHour = null;
-        let outHour = null;
-        try {
-          if (checkin.includes('T')) inHour = parseInt(checkin.split('T')[1].split(':')[0], 10);
-          if (checkout.includes('T')) outHour = parseInt(checkout.split('T')[1].split(':')[0], 10);
-        } catch(e) {}
-
-        await db.run(
-          `INSERT INTO bookings (id, contract_id, cottage_id, property, client_name, client_phone, checkin_at, checkout_at, check_in_hour, check_out_hour, guest_count, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [randomUUID(), id, cot_id, prop, data.client_name, data.client_phone, checkin, checkout, inHour, outHour, guests || 1, finalStatus]
-        );
-      };
-
-      if (data.property === "chunga_changa") {
-        if (data.cottage_included !== false && data.cottage_id) {
-          await insertBooking("chunga", data.cottage_id, data.checkin_at, data.checkout_at, data.guest_count);
-        }
-      } else if (data.property === "golubaya_bukhta") {
-        if (data.cottage_included !== false && data.cottage_id) {
-          await insertBooking("gb_cottages", data.cottage_id, data.checkin_at, data.checkout_at, data.guest_count);
-        }
-        if (data.sauna_included) {
-          const s_in = data.sauna_date && data.sauna_time_from ? `${data.sauna_date}T${data.sauna_time_from}:00` : null;
-          const s_out = data.sauna_date && data.sauna_time_to ? `${data.sauna_date}T${data.sauna_time_to}:00` : null;
-          await insertBooking("gb_banya", "gb-banya", s_in, s_out, data.sauna_guests);
-        }
-        if (data.hot_tub_included) {
-          const h_in = data.hot_tub_date && data.hot_tub_time_from ? `${data.hot_tub_date}T${data.hot_tub_time_from}:00` : null;
-          const h_out = data.hot_tub_date && data.hot_tub_time_to ? `${data.hot_tub_date}T${data.hot_tub_time_to}:00` : null;
-          await insertBooking("gb_banya", "gb-furako", h_in, h_out, data.hot_tub_guests);
-        }
-      }
-    }
+    await syncBookingsWithContract(db, id, data);
 
     const newContract = await db.get("SELECT * FROM contracts WHERE id = ?", [id]);
     res.json(newContract);
@@ -380,50 +390,7 @@ app.put("/api/contracts/:id", async (req, res) => {
       ]
     );
 
-    // Обновляем шахматку
-    await db.run("DELETE FROM bookings WHERE contract_id = ?", [id]);
-    if (data.status !== "cancelled") {
-      const statusMap = { 'paid': 'contract_paid', 'partial_paid': 'contract_signed', 'not_paid': 'contract_signed', 'pre_booking': 'pre_booking' };
-      const finalStatus = statusMap[data.status] || data.status;
-
-      const insertBooking = async (prop, cot_id, checkin, checkout, guests) => {
-        if (!checkin || !checkout) return;
-        
-        let inHour = null;
-        let outHour = null;
-        try {
-          if (checkin.includes('T')) inHour = parseInt(checkin.split('T')[1].split(':')[0], 10);
-          if (checkout.includes('T')) outHour = parseInt(checkout.split('T')[1].split(':')[0], 10);
-        } catch(e) {}
-
-        await db.run(
-          `INSERT INTO bookings (id, contract_id, cottage_id, property, client_name, client_phone, checkin_at, checkout_at, check_in_hour, check_out_hour, guest_count, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [randomUUID(), id, cot_id, prop, data.client_name, data.client_phone, checkin, checkout, inHour, outHour, guests || 1, finalStatus]
-        );
-      };
-
-      if (data.property === "chunga_changa") {
-        if (data.cottage_included !== false && data.cottage_id) {
-          await insertBooking("chunga", data.cottage_id, data.checkin_at, data.checkout_at, data.guest_count);
-        }
-      } else if (data.property === "golubaya_bukhta") {
-        if (data.cottage_included !== false && data.cottage_id) {
-          await insertBooking("gb_cottages", data.cottage_id, data.checkin_at, data.checkout_at, data.guest_count);
-        }
-        if (data.sauna_included) {
-          const s_in = data.sauna_date && data.sauna_time_from ? `${data.sauna_date}T${data.sauna_time_from}:00` : null;
-          const s_out = data.sauna_date && data.sauna_time_to ? `${data.sauna_date}T${data.sauna_time_to}:00` : null;
-          await insertBooking("gb_banya", "gb-banya", s_in, s_out, data.sauna_guests);
-        }
-        if (data.hot_tub_included) {
-          const h_in = data.hot_tub_date && data.hot_tub_time_from ? `${data.hot_tub_date}T${data.hot_tub_time_from}:00` : null;
-          const h_out = data.hot_tub_date && data.hot_tub_time_to ? `${data.hot_tub_date}T${data.hot_tub_time_to}:00` : null;
-          await insertBooking("gb_banya", "gb-furako", h_in, h_out, data.hot_tub_guests);
-        }
-      }
-    }
-
+    await syncBookingsWithContract(db, id, data);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

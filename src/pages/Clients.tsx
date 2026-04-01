@@ -61,11 +61,13 @@ export default function Clients() {
   const openNew = () => { setSelectedClient(null); setDrawerOpen(true); };
   const openEdit = (c: any) => { setSelectedClient(c as ClientData); setDrawerOpen(true); };
 
-  const filters: { key: FilterType; label: string }[] = [
+  const blacklistCount = useMemo(() => clients.filter((c) => c.is_blacklisted).length, [clients]);
+
+  const filters: { key: FilterType; label: string; isRed?: boolean }[] = [
     { key: "all", label: "Все" },
     { key: "individual", label: "Физлица" },
     { key: "legal_entity", label: "Юрлица" },
-    { key: "blacklist", label: "Чёрный список 🚫" },
+    { key: "blacklist", label: `🚫 Чёрный список${blacklistCount > 0 ? ` (${blacklistCount})` : ""}`, isRed: true },
   ];
 
   return (
@@ -97,7 +99,9 @@ export default function Clients() {
             onClick={() => setFilter(f.key)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
               filter === f.key
-                ? "bg-accent text-accent-foreground shadow-sm"
+                ? f.isRed
+                  ? "bg-destructive text-destructive-foreground shadow-sm"
+                  : "bg-accent text-accent-foreground shadow-sm"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >

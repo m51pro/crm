@@ -16,11 +16,11 @@ declare module '@tiptap/core' {
 
 const VariableComponent = (props: NodeViewProps) => {
   const { id, label } = props.node.attrs
-  const options = props.extension.options as VariableOptions
+  const storage = props.editor.storage.variable || {}
   
   const isStamp = id === 'my_stamp'
   const isSignature = id === 'my_signature'
-  const imageSrc = isStamp ? options.stampBase64 : (isSignature ? options.signatureBase64 : null)
+  const imageSrc = isStamp ? storage.stampBase64 : (isSignature ? storage.signatureBase64 : null)
 
   if (imageSrc) {
     return (
@@ -60,7 +60,7 @@ const VariableComponent = (props: NodeViewProps) => {
 }
 
 export const VariableExtension = Node.create<VariableOptions>({
-  name: 'chessVariable',
+  name: 'variable',
 
   group: 'inline',
 
@@ -69,6 +69,13 @@ export const VariableExtension = Node.create<VariableOptions>({
   selectable: true,
 
   atom: true,
+
+  addStorage() {
+    return {
+      stampBase64: null,
+      signatureBase64: null,
+    }
+  },
 
   addAttributes() {
     return {

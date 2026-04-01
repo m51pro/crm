@@ -70,26 +70,14 @@ export function TiptapEditor({ content, onChange, onInit, stampBase64, signature
     }
   })
 
-  // Реактивное обновление опций переменных при загрузке новых картинок
+  // Реактивное обновление хранилища переменных при загрузке новых картинок
   React.useEffect(() => {
-    if (editor) {
-      // Прямое обновление опций расширения через менеджер расширений
-      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-      const variableExt = (editor as any).extensionManager?.extensions?.find(
-        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-        (ext: any) => ext.name === 'chessVariable'
-      );
+    if (editor && editor.storage.variable) {
+      editor.storage.variable.stampBase64 = stampBase64;
+      editor.storage.variable.signatureBase64 = signatureBase64;
       
-      if (variableExt) {
-        variableExt.options = {
-          ...variableExt.options,
-          stampBase64,
-          signatureBase64
-        };
-        
-        // Трюк для перерисовки NodeViews
-        editor.view.dispatch(editor.state.tr)
-      }
+      // Трюк для перерисовки NodeViews
+      editor.view.dispatch(editor.state.tr);
     }
   }, [editor, stampBase64, signatureBase64])
 

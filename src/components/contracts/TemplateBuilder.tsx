@@ -46,7 +46,7 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from "@/components/ui/popover";
-import { TiptapEditor } from "./TiptapEditor";
+import { CKEditorComponent } from "./CKEditorComponent";
 
 interface TemplateBuilderProps {
   onBack: () => void;
@@ -269,7 +269,7 @@ const VARIABLE_GROUPS = [
 export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
   const [title, setTitle] = useState("Новый шаблон договора");
   const [content, setContent] = useState(DEFAULT_CONTENT);
-  const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
+  const [editorInstance, setEditorInstance] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -295,7 +295,7 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
           setContent(data.data.html_content || DEFAULT_CONTENT);
           setPageSettings(prev => ({ ...prev, ...data.data.settings }));
           if (editorInstance) {
-            editorInstance.commands.setContent(data.data.html_content || DEFAULT_CONTENT);
+            editorInstance.setData(data.data.html_content || DEFAULT_CONTENT);
           }
         }
       })
@@ -343,7 +343,7 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
       try {
         const result = await mammoth.convertToHtml({ arrayBuffer });
         setContent(result.value);
-        if (editorInstance) editorInstance.commands.setContent(result.value);
+        if (editorInstance) editorInstance.setData(result.value);
         toast.success("Документ успешно импортирован!");
       } catch (error) {
         toast.error("Ошибка при чтении .docx файла");
@@ -366,9 +366,13 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
     }
   }, [content]);
 
-  const insertVariable = (id: string, label: string) => {
+  const insertVariable = (id: string, _label: string) => {
     if (editorInstance) {
-      editorInstance.chain().focus().insertVariable({ id, label }).run();
+      editorInstance.model.change((writer: any) => {
+        const insertPosition = editorInstance.model.document.selection.getFirstPosition();
+        writer.insertText(`{{${id}}}`, insertPosition);
+      });
+      editorInstance.editing.view.focus();
     }
   };
 
@@ -422,7 +426,7 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
                     className="w-full justify-start text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 h-9 rounded-lg"
                     onClick={() => {
                        setContent(preset.html);
-                       if (editorInstance) editorInstance.commands.setContent(preset.html);
+                       if (editorInstance) editorInstance.setData(preset.html);
                        toast.success(`Загружен макет: ${preset.title}`);
                     }}
                   >
@@ -552,7 +556,7 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT COMPONENT: EDITOR */}
         <div className="flex-1 border-r border-border/40 flex flex-col bg-[#070708]">
-          <TiptapEditor 
+          <CKEditorComponent 
             content={content} 
             onChange={setContent} 
             onInit={setEditorInstance} 

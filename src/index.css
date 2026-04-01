@@ -28,15 +28,44 @@
     --radius: 1.25rem;
     --font-heading: 'Geologica', sans-serif;
     --font-body: 'Inter', sans-serif;
+
+    /* Sidebar & Theme Specifics */
+    --sidebar-bg: 0 0% 100%;
+    --sidebar-fg: 0 0% 9%;
+    --sidebar-muted: 0 0% 45%;
+    --sidebar-active: 43 96% 56%;
+    --sidebar-active-fg: 0 0% 9%;
+    
+    --chunga: 162 76% 45%;
+    --bukhta: 199 89% 48%;
   }
 
   .dark {
     --background: 0 0% 7%;
     --foreground: 0 0% 93%;
     --card: 0 0% 11%;
+    --card-foreground: 0 0% 93%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 93%;
+    --primary: 0 0% 93%;
+    --primary-foreground: 0 0% 9%;
     --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 93%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 65%;
     --accent: 43 96% 60%;
+    --accent-foreground: 0 0% 7%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 93%;
     --border: 0 0% 17%;
+    --input: 0 0% 17%;
+    --ring: 43 96% 60%;
+
+    --sidebar-bg: 0 0% 11%;
+    --sidebar-fg: 0 0% 93%;
+    --sidebar-muted: 0 0% 65%;
+    --sidebar-active: 43 96% 60%;
+    --sidebar-active-fg: 0 0% 7%;
   }
 }
 
@@ -49,9 +78,30 @@
   }
 }
 
+/* Lucide icons and buttons global fixes */
+svg {
+  @apply transition-colors;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.15);
+  border-radius: 99px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.25);
+}
+
 /* --- СТИЛИ ДЛЯ РЕДАКТОРА (EDITOR ONLY) --- */
 
-/* Контейнер колонок */
 .ProseMirror .columns-container {
   display: flex !important;
   width: 100% !important;
@@ -59,7 +109,7 @@
   margin: 30px 0 !important;
   padding: 10px !important;
   background: rgba(245, 158, 11, 0.03) !important;
-  border: 2px dashed rgba(245, 158, 11, 0.4) !important; /* ЯРКИЙ ОРАНЖЕВЫЙ ПУНКТИР */
+  border: 2px dashed rgba(245, 158, 11, 0.4) !important;
   border-radius: 12px !important;
   position: relative !important;
 }
@@ -77,7 +127,6 @@
   border-radius: 4px;
 }
 
-/* Сами колонки */
 .ProseMirror .column {
   flex: 1 !important;
   min-height: 150px !important;
@@ -87,14 +136,8 @@
   border-radius: 8px !important;
 }
 
-.ProseMirror .column:hover {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-}
+/* --- СТИЛИ ДЛЯ ПРЕДПРОСМОТРА И PDF --- */
 
-/* --- СТИЛИ ДЛЯ ПРЕДПРОСМОТРА И PDF (CLEAN OUTPUT) --- */
-
-/* Убираем все наши "технические" границы */
 .prose .columns-container,
 .prose .column,
 #preview-area .columns-container,
@@ -121,7 +164,3 @@
 .prose .column {
   flex: 1 !important;
 }
-
-/* Custom scrollbar */
-.custom-scrollbar::-webkit-scrollbar { width: 5px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / 0.15); border-radius: 99px; }

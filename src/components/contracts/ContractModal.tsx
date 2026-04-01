@@ -192,7 +192,7 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
 
   const cottages = form.property === "chunga_changa"
     ? CHUNGA_CHANGA_COTTAGES
-    : [...GB_COTTAGES, ...GB_HOURLY];
+    : [...GB_COTTAGES, ...GB_BANYA_ITEMS];
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};

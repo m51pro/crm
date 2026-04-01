@@ -26,7 +26,7 @@ export function BookingSection({ form, setF, daysCalc }: BookingSectionProps) {
       <SectionHeader title="Бронирование" />
       
       <div className={cn(
-        "space-y-4 p-5 rounded-2xl border transition-all", 
+        "space-y-4 p-5 rounded-xl border transition-all", 
         form.cottage_included ? "bg-muted/20 border-border/50 shadow-sm" : "bg-muted/5 border-dashed opacity-50 shadow-none"
       )}>
         <div className="flex items-center justify-between">
@@ -48,11 +48,11 @@ export function BookingSection({ form, setF, daysCalc }: BookingSectionProps) {
           )}
         </div>
 
-        <div className="grid gap-4" style={{ gridTemplateColumns: form.property === "chunga_changa" ? "1fr" : "1fr 140px" }}>
-          <div className="space-y-1.5 w-full">
-            <Label className="text-[10px] text-muted-foreground font-black uppercase">Коттедж *</Label>
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="space-y-1.5 flex-1 min-w-[200px]">
+            <Label className="text-xs text-muted-foreground font-black uppercase">Коттедж *</Label>
             <Select value={form.cottage_id} onValueChange={(v) => { setF("cottage_id", v); setF("is_full_day", false); }} disabled={!form.cottage_included}>
-              <SelectTrigger className="h-10 bg-background rounded-xl font-bold shadow-sm w-full">
+              <SelectTrigger className="h-10 bg-background rounded-lg font-bold shadow-sm w-full">
                 <SelectValue placeholder="Выберите коттедж" />
               </SelectTrigger>
               <SelectContent>
@@ -60,7 +60,7 @@ export function BookingSection({ form, setF, daysCalc }: BookingSectionProps) {
                   <SelectItem key={c.id} value={c.id}>
                     <div className="flex items-center justify-between min-w-[150px] w-full gap-2">
                       <span>{c.name}</span>
-                      {form.property !== "chunga_changa" && c.capacity && <Badge variant="secondary" className="text-[9px] ml-auto">{c.capacity} мест</Badge>}
+                      {c && (c as { capacity?: number | null }).capacity && <Badge variant="secondary" className="text-xs ml-auto">{(c as { capacity?: number | null }).capacity} мест</Badge>}
                     </div>
                   </SelectItem>
                 ))}
@@ -68,31 +68,31 @@ export function BookingSection({ form, setF, daysCalc }: BookingSectionProps) {
             </Select>
           </div>
           {form.property !== "chunga_changa" && (
-            <div className="space-y-1.5 w-[140px]">
-              <Label className="text-[10px] text-muted-foreground font-black uppercase">Гостей</Label>
-              <Input type="number" value={form.guest_count} onChange={(e) => setF("guest_count", e.target.value)} disabled={!form.cottage_included} className="h-10 rounded-xl font-bold bg-background shadow-sm" />
+            <div className="space-y-1.5 min-w-[100px] flex-initial">
+              <Label className="text-xs text-muted-foreground font-black uppercase">Гостей</Label>
+              <Input type="number" value={form.guest_count} onChange={(e) => setF("guest_count", e.target.value)} disabled={!form.cottage_included} className="h-10 rounded-lg font-bold bg-background shadow-sm" />
             </div>
           )}
         </div>
 
-        <div className={cn("grid gap-4 items-end", form.property === "chunga_changa" ? "grid-cols-[1fr_1fr]" : "grid-cols-[1fr_1fr_80px]")}>
-          <div className="p-3 bg-background/50 rounded-xl border border-border/40 flex-1">
-            <span className="text-[9px] font-black uppercase text-muted-foreground/70 mb-2 block tracking-widest">Заезд</span>
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="p-3 bg-background/50 rounded-xl border border-border/40 flex-1 min-w-[200px]">
+            <span className="text-xs font-black uppercase text-muted-foreground/70 mb-2 block tracking-widest">Заезд</span>
             <div className="flex items-center gap-2">
               <div className="flex-1 text-sm"><DateInput value={form.checkin_at_date} onChange={(v) => setF("checkin_at_date", v)} /></div>
               <div className="w-16"><Input type="time" value={form.checkin_at_time} onChange={(e) => setF("checkin_at_time", e.target.value)} className="h-8 rounded-lg text-xs font-bold p-1" /></div>
             </div>
           </div>
-          <div className="p-3 bg-background/50 rounded-xl border border-border/40 flex-1">
-            <span className="text-[9px] font-black uppercase text-muted-foreground/70 mb-2 block tracking-widest">Выезд</span>
+          <div className="p-3 bg-background/50 rounded-xl border border-border/40 flex-1 min-w-[200px]">
+            <span className="text-xs font-black uppercase text-muted-foreground/70 mb-2 block tracking-widest">Выезд</span>
             <div className="flex items-center gap-2">
               <div className="flex-1 text-sm"><DateInput value={form.checkout_at_date} onChange={(v) => setF("checkout_at_date", v)} /></div>
               <div className="w-16"><Input type="time" value={form.checkout_at_time} onChange={(e) => setF("checkout_at_time", e.target.value)} className="h-8 rounded-lg text-xs font-bold p-1" /></div>
             </div>
           </div>
           {form.property !== "chunga_changa" && (
-            <div className="flex flex-col items-center justify-center h-[58px] bg-amber-50 rounded-xl border border-amber-200">
-              <span className="text-[9px] font-black uppercase text-amber-700/70 block text-center mb-0.5">Ночей</span>
+            <div className="flex flex-col items-center justify-center h-[58px] bg-amber-50 rounded-xl border border-amber-200 min-w-[80px]">
+              <span className="text-xs font-black uppercase text-amber-700/70 block text-center mb-0.5">Ночей</span>
               <span className="text-xl font-black text-amber-700 leading-none">{daysCalc}</span>
             </div>
           )}
@@ -103,13 +103,13 @@ export function BookingSection({ form, setF, daysCalc }: BookingSectionProps) {
       {form.property === "golubaya_bukhta" && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 py-2">
-            <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">Дополнительные услуги</span>
+            <span className="text-xs font-black uppercase tracking-widest text-muted-foreground/60">Дополнительные услуги</span>
             <div className="flex-1 h-px bg-border/40" />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className={cn(
-              "p-4 rounded-2xl border transition-all", 
+              "p-4 rounded-xl border transition-all", 
               form.sauna_included ? "bg-teal-50/30 dark:bg-teal-950/20 border-teal-200 dark:border-teal-900 shadow-sm" : "bg-muted/5 border-border/40 opacity-70"
             )}>
               <div className="flex items-center gap-3 mb-3">
@@ -119,23 +119,23 @@ export function BookingSection({ form, setF, daysCalc }: BookingSectionProps) {
               {form.sauna_included && (
                 <div className="grid grid-cols-2 gap-x-2 gap-y-3 animate-in fade-in zoom-in-95 duration-200 mt-2">
                   <div className="space-y-1 col-span-2">
-                    <Label className="text-[9px] font-black uppercase text-teal-700/60 dark:text-teal-400/60">Дата услуги</Label>
+                    <Label className="text-xs font-black uppercase text-teal-700/60 dark:text-teal-400/60">Дата услуги</Label>
                     <div className="h-9"><DateInput value={form.sauna_date} onChange={(v) => setF("sauna_date", v)} /></div>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[9px] font-black uppercase text-teal-700/60 dark:text-teal-400/60">Время С</Label>
+                    <Label className="text-xs font-black uppercase text-teal-700/60 dark:text-teal-400/60">Время С</Label>
                     <Input type="time" value={form.sauna_time_from} onChange={(e) => setF("sauna_time_from", e.target.value)} className="h-9 text-xs font-bold rounded-lg border-teal-200 dark:border-teal-900 bg-background" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[9px] font-black uppercase text-teal-700/60 dark:text-teal-400/60">Время ПО</Label>
+                    <Label className="text-xs font-black uppercase text-teal-700/60 dark:text-teal-400/60">Время ПО</Label>
                     <Input type="time" value={form.sauna_time_to} onChange={(e) => setF("sauna_time_to", e.target.value)} className="h-9 text-xs font-bold rounded-lg border-teal-200 dark:border-teal-900 bg-background" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[9px] font-black uppercase text-teal-700/60 dark:text-teal-400/60">Стоимость (₽)</Label>
+                    <Label className="text-xs font-black uppercase text-teal-700/60 dark:text-teal-400/60">Стоимость (₽)</Label>
                     <Input type="number" value={form.sauna_price} onChange={(e) => setF("sauna_price", e.target.value)} className="h-9 text-sm font-bold rounded-lg border-teal-200 dark:border-teal-900 bg-background" placeholder="0" min={0} />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[9px] font-black uppercase text-teal-700/60 dark:text-teal-400/60">Гостей</Label>
+                    <Label className="text-xs font-black uppercase text-teal-700/60 dark:text-teal-400/60">Гостей</Label>
                     <Input type="number" value={form.sauna_guests} onChange={(e) => setF("sauna_guests", e.target.value)} className="h-9 text-sm font-bold rounded-lg border-teal-200 dark:border-teal-900 bg-background" placeholder="0" min={0} />
                   </div>
                 </div>
@@ -143,7 +143,7 @@ export function BookingSection({ form, setF, daysCalc }: BookingSectionProps) {
             </div>
 
             <div className={cn(
-              "p-4 rounded-2xl border transition-all", 
+              "p-4 rounded-xl border transition-all", 
               form.hot_tub_included ? "bg-sky-50/30 dark:bg-sky-950/20 border-sky-200 dark:border-sky-900 shadow-sm" : "bg-muted/5 border-border/40 opacity-70"
             )}>
               <div className="flex items-center gap-3 mb-3">
@@ -153,23 +153,23 @@ export function BookingSection({ form, setF, daysCalc }: BookingSectionProps) {
               {form.hot_tub_included && (
                 <div className="grid grid-cols-2 gap-x-2 gap-y-3 animate-in fade-in zoom-in-95 duration-200 mt-2">
                   <div className="space-y-1 col-span-2">
-                    <Label className="text-[9px] font-black uppercase text-sky-700/60 dark:text-sky-400/60">Дата услуги</Label>
+                    <Label className="text-xs font-black uppercase text-sky-700/60 dark:text-sky-400/60">Дата услуги</Label>
                     <div className="h-9"><DateInput value={form.hot_tub_date} onChange={(v) => setF("hot_tub_date", v)} /></div>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[9px] font-black uppercase text-sky-700/60 dark:text-sky-400/60">Время С</Label>
+                    <Label className="text-xs font-black uppercase text-sky-700/60 dark:text-sky-400/60">Время С</Label>
                     <Input type="time" value={form.hot_tub_time_from} onChange={(e) => setF("hot_tub_time_from", e.target.value)} className="h-9 text-xs font-bold rounded-lg border-sky-200 dark:border-sky-900 bg-background" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[9px] font-black uppercase text-sky-700/60 dark:text-sky-400/60">Время ПО</Label>
+                    <Label className="text-xs font-black uppercase text-sky-700/60 dark:text-teal-400/60">Время ПО</Label>
                     <Input type="time" value={form.hot_tub_time_to} onChange={(e) => setF("hot_tub_time_to", e.target.value)} className="h-9 text-xs font-bold rounded-lg border-sky-200 dark:border-sky-900 bg-background" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[9px] font-black uppercase text-sky-700/60 dark:text-sky-400/60">Стоимость (₽)</Label>
+                    <Label className="text-xs font-black uppercase text-sky-700/60 dark:text-sky-400/60">Стоимость (₽)</Label>
                     <Input type="number" value={form.hot_tub_price} onChange={(e) => setF("hot_tub_price", e.target.value)} className="h-9 text-sm font-bold rounded-lg border-sky-200 dark:border-sky-900 bg-background" placeholder="0" min={0} />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[9px] font-black uppercase text-sky-700/60 dark:text-sky-400/60">Гостей</Label>
+                    <Label className="text-xs font-black uppercase text-sky-700/60 dark:text-sky-400/60">Гостей</Label>
                     <Input type="number" value={form.hot_tub_guests} onChange={(e) => setF("hot_tub_guests", e.target.value)} className="h-9 text-sm font-bold rounded-lg border-sky-200 dark:border-sky-900 bg-background" placeholder="0" min={0} />
                   </div>
                 </div>

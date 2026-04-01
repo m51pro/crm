@@ -410,7 +410,6 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
       } else if (id === 'my_sign_stamp') {
         editorInstance.commands.insertContent('<p style="text-align: right;">М.П. ________________</p>');
       } else {
-        // @ts-expect-error - custom command
         editorInstance.commands.chessInsertVariable({ id, label });
       }
       editorInstance.commands.focus();

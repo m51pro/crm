@@ -157,11 +157,16 @@ async function initDb() {
   return db;
 }
 
-// Помощник для синхронизации броней с договором
+// Помощник для синхронизации броней с договором (Неразрушающее обновление)
 async function syncBookingsWithContract(db, contractId, data) {
-  // Обновляем шахматку
-  await db.run("DELETE FROM bookings WHERE contract_id = ?", [contractId]);
-  if (data.status === "cancelled") return;
+  // 1. Получаем текущие брони для этого договора
+  const existingRows = await db.all("SELECT id, cottage_id, property FROM bookings WHERE contract_id = ?", [contractId]);
+  
+  // Если договор аннулирован, удаляем все брони и выходим
+  if (data.status === "cancelled") {
+    await db.run("DELETE FROM bookings WHERE contract_id = ?", [contractId]);
+    return;
+  }
 
   const statusMap = { 
     'paid': 'contract_paid', 
@@ -171,41 +176,79 @@ async function syncBookingsWithContract(db, contractId, data) {
   };
   const finalStatus = statusMap[data.status] || data.status;
 
-  const insertBooking = async (prop, cot_id, checkin, checkout, guests) => {
-    if (!checkin || !checkout) return;
-    
-    let inHour = null;
-    let outHour = null;
-    try {
-      if (checkin.includes('T')) inHour = parseInt(checkin.split('T')[1].split(':')[0], 10);
-      if (checkout.includes('T')) outHour = parseInt(checkout.split('T')[1].split(':')[0], 10);
-    } catch(e) {}
+  // ОПРЕДЕЛЯЕМ ЦЕЛЕВЫЕ БРОНИ (то, что должно быть в базе)
+  const targets = [];
 
-    await db.run(
-      `INSERT INTO bookings (id, contract_id, cottage_id, property, client_name, client_phone, checkin_at, checkout_at, check_in_hour, check_out_hour, guest_count, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [randomUUID(), contractId, cot_id, prop, data.client_name, data.client_phone, checkin, checkout, inHour, outHour, guests || 1, finalStatus]
-    );
-  };
+  // Основной коттедж
+  if (data.cottage_included !== false && data.cottage_id) {
+    const prop = data.property === "chunga_changa" ? "chunga" : "gb_cottages";
+    targets.push({ 
+      cottage_id: data.cottage_id, 
+      property: prop, 
+      checkin: data.checkin_at, 
+      checkout: data.checkout_at, 
+      guests: data.guest_count 
+    });
+  }
 
-  if (data.property === "chunga_changa") {
-    if (data.cottage_included !== false && data.cottage_id) {
-      await insertBooking("chunga", data.cottage_id, data.checkin_at, data.checkout_at, data.guest_count);
-    }
-  } else if (data.property === "golubaya_bukhta") {
-    if (data.cottage_included !== false && data.cottage_id) {
-      await insertBooking("gb_cottages", data.cottage_id, data.checkin_at, data.checkout_at, data.guest_count);
-    }
+  // Доп. услуги для Голубой Бухты
+  if (data.property === "golubaya_bukhta") {
     if (data.sauna_included) {
       const s_in = data.sauna_date && data.sauna_time_from ? `${data.sauna_date}T${data.sauna_time_from}:00` : null;
       const s_out = data.sauna_date && data.sauna_time_to ? `${data.sauna_date}T${data.sauna_time_to}:00` : null;
-      await insertBooking("gb_banya", "gb-banya", s_in, s_out, data.sauna_guests);
+      if (s_in && s_out) {
+        targets.push({ cottage_id: "gb-banya", property: "gb_banya", checkin: s_in, checkout: s_out, guests: data.sauna_guests });
+      }
     }
     if (data.hot_tub_included) {
       const h_in = data.hot_tub_date && data.hot_tub_time_from ? `${data.hot_tub_date}T${data.hot_tub_time_from}:00` : null;
       const h_out = data.hot_tub_date && data.hot_tub_time_to ? `${data.hot_tub_date}T${data.hot_tub_time_to}:00` : null;
-      await insertBooking("gb_banya", "gb-furako", h_in, h_out, data.hot_tub_guests);
+      if (h_in && h_out) {
+        targets.push({ cottage_id: "gb-furako", property: "gb_banya", checkin: h_in, checkout: h_out, guests: data.hot_tub_guests });
+      }
     }
+  }
+
+  // ВЫЧИСЛЯЕМ РАЗНИЦУ (Matched, ToInsert, ToDelete)
+  const toDelete = existingRows.filter(ext => !targets.some(t => t.cottage_id === ext.cottage_id && t.property === ext.property));
+  const toInsert = targets.filter(t => !existingRows.some(ext => ext.cottage_id === t.cottage_id && ext.property === t.property));
+  const toUpdate = targets.filter(t => existingRows.some(ext => ext.cottage_id === t.cottage_id && ext.property === t.property));
+
+  // 1. DELETE: Удаляем то, чего больше нет в целях
+  for (const row of toDelete) {
+    await db.run("DELETE FROM bookings WHERE id = ?", [row.id]);
+  }
+
+  // 2. UPDATE: Обновляем существующие записи (сохраняя ID)
+  for (const t of toUpdate) {
+    const existing = existingRows.find(ext => ext.cottage_id === t.cottage_id && ext.property === t.property);
+    
+    let inHour = null, outHour = null;
+    try {
+      if (t.checkin && t.checkin.includes('T')) inHour = parseInt(t.checkin.split('T')[1].split(':')[0], 10);
+      if (t.checkout && t.checkout.includes('T')) outHour = parseInt(t.checkout.split('T')[1].split(':')[0], 10);
+    } catch(e) {}
+
+    await db.run(
+      `UPDATE bookings SET client_name = ?, client_phone = ?, checkin_at = ?, checkout_at = ?, check_in_hour = ?, check_out_hour = ?, guest_count = ?, status = ?
+       WHERE id = ?`,
+      [data.client_name, data.client_phone, t.checkin, t.checkout, inHour, outHour, t.guests || 1, finalStatus, existing.id]
+    );
+  }
+
+  // 3. INSERT: Добавляем новые брони
+  for (const t of toInsert) {
+    let inHour = null, outHour = null;
+    try {
+      if (t.checkin && t.checkin.includes('T')) inHour = parseInt(t.checkin.split('T')[1].split(':')[0], 10);
+      if (t.checkout && t.checkout.includes('T')) outHour = parseInt(t.checkout.split('T')[1].split(':')[0], 10);
+    } catch(e) {}
+
+    await db.run(
+      `INSERT INTO bookings (id, contract_id, cottage_id, property, client_name, client_phone, checkin_at, checkout_at, check_in_hour, check_out_hour, guest_count, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [randomUUID(), contractId, t.cottage_id, t.property, data.client_name, data.client_phone, t.checkin, t.checkout, inHour, outHour, t.guests || 1, finalStatus]
+    );
   }
 }
 

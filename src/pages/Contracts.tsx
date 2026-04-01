@@ -15,43 +15,11 @@ import ContractModal from "@/components/contracts/ContractModal";
 import { NotifierAlert } from "@/components/contracts/NotifierAlert";
 import { CHUNGA_CHANGA_COTTAGES, GB_COTTAGES, GB_BANYA_ITEMS } from "@/lib/chess-data";
 import { API_URL } from "@/lib/api";
+import { Contract } from "@/types/crm";
 
 type ContractStatus = "pre_booking" | "not_paid" | "partial_paid" | "paid" | "cancelled";
 type FilterStatus = "all" | ContractStatus;
 type PropertyFilter = "all" | "chunga_changa" | "golubaya_bukhta";
-
-export interface Contract {
-  id: string;
-  contract_number: string;
-  contract_date: string;
-  client_id: string;
-  client_name: string;
-  client_phone: string;
-  property: string;
-  cottage_id: string;
-  bath_included: boolean;
-  bath_date: string;
-  bath_time_from: string;
-  bath_time_to: string;
-  checkin_at?: string;
-  checkout_at?: string;
-  check_in_date?: string;
-  check_in_hour?: number;
-  check_out_date?: string;
-  check_out_hour?: number;
-  guest_count: number;
-  rent_price: number;
-  prepayment: number;
-  payment_date: string;
-  payment_amount: number;
-  extra_info: string;
-  notes?: string;
-  status: ContractStatus;
-  created_at: string;
-  total_amount?: number;
-  prepayment_amount?: number;
-  total?: number;
-}
 
 export default function Contracts() {
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -76,7 +44,7 @@ export default function Contracts() {
         client_phone: c.phone || c.contact_phone || "",
         status: "not_paid",
         property: "chunga_changa"
-      } as unknown as Contract);
+      });
       setModalOpen(true);
       // Clear state so it doesn't trigger on reload
       navigate(location.pathname, { replace: true, state: {} });
@@ -97,10 +65,8 @@ export default function Contracts() {
 
   const getComputedStatus = useCallback((c: Contract): ContractStatus => {
     if (c.status === "cancelled") return "cancelled";
-    const rentVal = c.rent_price !== undefined && c.rent_price !== null ? c.rent_price : (c.total_amount || 0);
-    const rent = typeof rentVal === 'number' ? rentVal : parseFloat(String(rentVal || 0));
-    const prepayVal = c.prepayment || 0;
-    const prepay = typeof prepayVal === 'number' ? prepayVal : parseFloat(String(prepayVal || 0));
+    const rent = Number(c.total || c.rent_price || 0);
+    const prepay = Number(c.prepayment || 0);
     if (c.status === "pre_booking" && prepay === 0 && rent === 0) return "pre_booking";
     if (prepay === 0) return "not_paid"; 
     const remains = Math.max(0, rent - prepay);
@@ -327,7 +293,7 @@ export default function Contracts() {
                         {c.checkout_at ? format(new Date(c.checkout_at), "dd.MM.yy HH:mm") : "—"}
                       </TableCell>
                       <TableCell className="text-right text-sm font-bold text-foreground">
-                        {formatAmount(c.rent_price !== undefined ? c.rent_price : (c.total_amount || c.total))}
+                        {formatAmount(c.total || c.rent_price)}
                       </TableCell>
                       <TableCell className="text-right text-sm text-muted-foreground font-medium">
                         {formatAmount(c.prepayment)}

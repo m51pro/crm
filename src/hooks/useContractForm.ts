@@ -246,6 +246,9 @@ export function useContractForm({ open, contract, onSaved, onClose }: UseContrac
     try {
       const payload = {
         ...form,
+        rent_price: parseFloat(form.rent_price.toString()) || 0,
+        prepayment: parseFloat(form.prepayment.toString()) || 0,
+        guest_count: parseInt(form.guest_count.toString()) || 1,
         days: daysCalc,
         total: totalRentSum,
         checkin_at: form.checkin_at_date ? `${form.checkin_at_date}T${form.checkin_at_time}:00` : null,

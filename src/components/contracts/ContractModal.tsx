@@ -37,14 +37,14 @@ const statusOptions = [
 export default function ContractModal({ open, onClose, contract, onSaved }: Props) {
   const {
     form, setF,
-    templates, clientSearch, setClientSearch, clientSearchOpen, setClientSearchOpen,
+    templates, clients, clientSearch, setClientSearch, clientSearchOpen, setClientSearchOpen,
     clientDrawerOpen, setClientDrawerOpen, saving, showExtraInfo, setShowExtraInfo,
     isEditing, daysCalc, totalRentSum, totalToPay, filteredClients,
     handleSave, fetchClients
   } = useContractForm({ open, contract, onSaved, onClose });
 
   const handleGenerateDocument = async (templateId: string) => {
-    generatePdfFromHtml(templateId, form, []); // Passing empty clients as it's not strictly used in current lib
+    generatePdfFromHtml(templateId, form, clients);
   };
 
   const getStatusBadge = () => {
@@ -101,12 +101,12 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
                 {!isEditing && (
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-sky-50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900 rounded-xl transition-all hover:bg-sky-100/50">
                     <Checkbox id="prebooking" checked={form.is_prebooking} onCheckedChange={(c) => setF("is_prebooking", !!c)} className="border-sky-400 data-[state=checked]:bg-sky-500" />
-                    <label htmlFor="prebooking" className="text-[11px] font-black uppercase text-sky-700 dark:text-sky-400 cursor-pointer tracking-wider">Предбронь</label>
+                    <label htmlFor="prebooking" className="text-xs font-black uppercase text-sky-700 dark:text-sky-400 cursor-pointer tracking-wider">Предбронь</label>
                   </div>
                 )}
               </div>
               <div className="flex flex-col items-end">
-                <span className="text-[9px] uppercase font-black text-muted-foreground tracking-tighter opacity-70">№ договора</span>
+                <span className="text-xs uppercase font-black text-muted-foreground tracking-tighter opacity-70">№ договора</span>
                 <span className="font-mono text-lg font-black text-accent -mt-0.5 leading-none">{form.contract_number}</span>
               </div>
             </div>
@@ -144,7 +144,7 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
             <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 rounded-xl" disabled={templates.length === 0}>
+                  <Button variant="outline" className="gap-2 rounded-lg" disabled={templates.length === 0}>
                     <FileDown className="h-4 w-4" /> 
                     Сформировать 
                     <ChevronDown className="h-3 w-3 opacity-50" />
@@ -164,12 +164,12 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button variant="outline" className="gap-2 rounded-xl"><Mail className="h-4 w-4" /> Email</Button>
+              <Button variant="outline" className="gap-2 rounded-lg"><Mail className="h-4 w-4" /> Email</Button>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="ghost" onClick={() => handleSave(false)} disabled={saving} className="rounded-xl">Применить</Button>
-              <Button onClick={() => handleSave(true)} disabled={saving} className="bg-amber-500 text-white hover:bg-amber-600 font-bold px-8 rounded-xl shadow-md">ОК</Button>
-              <Button variant="ghost" onClick={onClose} className="rounded-xl">Закрыть</Button>
+              <Button variant="ghost" onClick={() => handleSave(false)} disabled={saving} className="rounded-lg">Применить</Button>
+              <Button onClick={() => handleSave(true)} disabled={saving} className="bg-amber-500 text-white hover:bg-amber-600 font-bold px-8 rounded-lg shadow-md">ОК</Button>
+              <Button variant="ghost" onClick={onClose} className="rounded-lg">Закрыть</Button>
             </div>
           </DialogFooter>
         </DialogContent>

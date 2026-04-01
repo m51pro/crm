@@ -50,6 +50,7 @@ export interface Contract {
   check_out_hour?: string | number;
   guest_count?: string | number;
   rent_price?: string | number;
+  total?: string | number;
   total_amount?: string | number;
   prepayment?: string | number;
   prepayment_amount?: string | number;

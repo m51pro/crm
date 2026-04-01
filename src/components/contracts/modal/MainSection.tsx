@@ -42,7 +42,7 @@ export function MainSection({
                 ? "bg-chunga shadow-[0_0_8px_rgba(249,115,22,0.4)]" 
                 : "bg-bukhta shadow-[0_0_8px_rgba(14,165,233,0.4)]"
             )} />
-            <span className="text-[12px] font-bold">
+            <span className="text-xs font-bold">
               {form.property === "chunga_changa" ? "Чунга-Чанга" : "Голубая Бухта"}
             </span>
           </div>
@@ -69,7 +69,7 @@ export function MainSection({
                 }}
                 onFocus={() => setClientSearchOpen(true)}
                 placeholder="Поиск по имени или телефону..."
-                className="pr-10 h-11 bg-background focus-visible:ring-accent font-bold text-base rounded-xl"
+                className="pr-10 h-11 bg-background focus-visible:ring-accent font-bold text-base rounded-lg"
               />
               <Search className={cn(
                 "absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors",

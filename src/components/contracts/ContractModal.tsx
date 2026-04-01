@@ -13,7 +13,7 @@ import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CHUNGA_CHANGA_COTTAGES, GB_COTTAGES, GB_HOURLY } from "@/lib/chess-data";
+import { CHUNGA_CHANGA_COTTAGES, GB_COTTAGES, GB_BANYA_ITEMS } from "@/lib/chess-data";
 
 interface Props {
   open: boolean;

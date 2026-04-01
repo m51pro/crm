@@ -19,15 +19,15 @@ export const CHUNGA_CHANGA_COTTAGES = [
 export const GB_COTTAGES = [
   { id: "gb-1", name: "Коттедж №1" },
   { id: "gb-2", name: "Коттедж №2" },
-  { id: "gb-3-1", name: "№3/1" },
-  { id: "gb-3-2", name: "№3/2" },
-  { id: "gb-3-3", name: "№3/3" },
-  { id: "gb-3-4", name: "№3/4" },
-  { id: "gb-3-5", name: "№3/5" },
-  { id: "gb-5-1", name: "№5.1" },
-  { id: "gb-5-2", name: "№5.2" },
-  { id: "gb-6-1", name: "№6.1" },
-  { id: "gb-6-2", name: "№6.2" },
+  { id: "gb-3-1", name: "Коттедж №3/1" },
+  { id: "gb-3-2", name: "Коттедж №3/2" },
+  { id: "gb-3-3", name: "Коттедж №3/3" },
+  { id: "gb-3-4", name: "Коттедж №3/4" },
+  { id: "gb-3-5", name: "Коттедж №3/5" },
+  { id: "gb-5-1", name: "Коттедж №5.1" },
+  { id: "gb-5-2", name: "Коттедж №5.2" },
+  { id: "gb-6-1", name: "Коттедж №6.1" },
+  { id: "gb-6-2", name: "Коттедж №6.2" },
 ];
 
 export const GB_BANYA_ITEMS = [
@@ -47,32 +47,47 @@ export const HOURS_GB_BANYA = [
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
 ];
 
-export const BOOKING_COLORS = [
-  "bg-blue-100 border-blue-300 text-blue-900",
-  "bg-emerald-100 border-emerald-300 text-emerald-900",
-  "bg-amber-100 border-amber-300 text-amber-900",
-  "bg-purple-100 border-purple-300 text-purple-900",
-  "bg-rose-100 border-rose-300 text-rose-900",
-  "bg-cyan-100 border-cyan-300 text-cyan-900",
-  "bg-orange-100 border-orange-300 text-orange-900",
-  "bg-indigo-100 border-indigo-300 text-indigo-900",
-  "bg-lime-100 border-lime-300 text-lime-900",
-  "bg-pink-100 border-pink-300 text-pink-900",
-];
+export const BOOKING_COLORS = {
+  pre_booking: [
+    "bg-blue-50 border-blue-300 text-blue-800",
+    "bg-emerald-50 border-emerald-300 text-emerald-800",
+    "bg-amber-50 border-amber-300 text-amber-800",
+    "bg-purple-50 border-purple-300 text-purple-800",
+    "bg-rose-50 border-rose-300 text-rose-800",
+  ],
+  contract_signed: [
+    "bg-blue-100 border-blue-400 text-blue-900",
+    "bg-emerald-100 border-emerald-400 text-emerald-900",
+    "bg-amber-100 border-amber-400 text-amber-900",
+    "bg-purple-100 border-purple-400 text-purple-900",
+    "bg-rose-100 border-rose-400 text-rose-900",
+  ],
+  contract_paid: [
+    "bg-blue-200 border-blue-500 text-blue-950",
+    "bg-emerald-200 border-emerald-500 text-emerald-950",
+    "bg-amber-200 border-amber-500 text-amber-950",
+    "bg-purple-200 border-purple-500 text-purple-950",
+    "bg-rose-200 border-rose-500 text-rose-950",
+  ],
+};
+
+export type BookingStatus = "pre_booking" | "contract_signed" | "contract_paid";
 
 export interface Booking {
   id: string;
   cottageId: string;
   clientName: string;
   phone: string;
+  email?: string;
   checkInHour: number;
   checkOutHour: number;
   guestCount: number;
   contractNumber?: string;
-  // For daily rentals (GB cottages)
   checkInDate?: string;
   checkOutDate?: string;
   isDaily?: boolean;
+  status: BookingStatus;
+  notes?: string;
 }
 
 // Mock bookings for demo
@@ -86,6 +101,7 @@ export const MOCK_BOOKINGS_CC: Booking[] = [
     checkOutHour: 16,
     guestCount: 12,
     contractNumber: "Д-001",
+    status: "contract_paid",
   },
   {
     id: "b2",
@@ -96,6 +112,7 @@ export const MOCK_BOOKINGS_CC: Booking[] = [
     checkOutHour: 22,
     guestCount: 8,
     contractNumber: "Д-002",
+    status: "contract_signed",
   },
   {
     id: "b3",
@@ -106,6 +123,7 @@ export const MOCK_BOOKINGS_CC: Booking[] = [
     checkOutHour: 2,
     guestCount: 25,
     contractNumber: "Д-003",
+    status: "contract_signed",
   },
   {
     id: "b4",
@@ -115,6 +133,7 @@ export const MOCK_BOOKINGS_CC: Booking[] = [
     checkInHour: 12,
     checkOutHour: 18,
     guestCount: 20,
+    status: "pre_booking",
   },
 ];
 
@@ -131,6 +150,7 @@ export const MOCK_BOOKINGS_GB_COTTAGES: Booking[] = [
     guestCount: 6,
     isDaily: true,
     contractNumber: "ГБ-001",
+    status: "contract_paid",
   },
   {
     id: "gb-b2",
@@ -144,6 +164,7 @@ export const MOCK_BOOKINGS_GB_COTTAGES: Booking[] = [
     guestCount: 4,
     isDaily: true,
     contractNumber: "ГБ-002",
+    status: "contract_signed",
   },
 ];
 
@@ -156,6 +177,7 @@ export const MOCK_BOOKINGS_GB_BANYA: Booking[] = [
     checkInHour: 14,
     checkOutHour: 18,
     guestCount: 4,
+    status: "contract_signed",
   },
   {
     id: "gb-furako-1",
@@ -165,15 +187,28 @@ export const MOCK_BOOKINGS_GB_BANYA: Booking[] = [
     checkInHour: 16,
     checkOutHour: 19,
     guestCount: 2,
+    status: "pre_booking",
   },
 ];
 
-export function getBookingColor(index: number): string {
-  return BOOKING_COLORS[index % BOOKING_COLORS.length];
+export function getBookingColor(index: number, status: BookingStatus = "contract_signed"): string {
+  const palette = BOOKING_COLORS[status];
+  return palette[index % palette.length];
 }
 
 export function formatHour(h: number): string {
   return `${h}:00`;
+}
+
+/** Parse a column name into label + number parts */
+export function parseColumnName(name: string): { label: string; number: string } {
+  // Match patterns like "Дом №1", "Коттедж №3/1", "Баня"
+  const match = name.match(/^(Дом|Коттедж)\s*(№.+)$/);
+  if (match) {
+    return { label: match[1], number: match[2] };
+  }
+  // No split possible (e.g. "Баня", "Фурако")
+  return { label: "", number: name };
 }
 
 /** Get hour index within a given hours array, handling wrap-around */

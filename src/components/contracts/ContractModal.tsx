@@ -28,6 +28,7 @@ import { API_URL } from "@/lib/api";
 import { CHUNGA_CHANGA_COTTAGES, GB_COTTAGES } from "@/lib/chess-data";
 import { toast } from "sonner";
 import ClientDrawer from "../clients/ClientDrawer";
+import { generatePdfFromHtml } from "@/lib/documentGenerator";
 
 interface Cottage {
   id: string;
@@ -44,6 +45,7 @@ interface Client {
   phone?: string;
   contact_phone?: string;
   client_type: "individual" | "legal";
+  [key: string]: unknown;
 }
 
 interface Props {
@@ -159,10 +161,15 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
 
   const [showExtraInfo, setShowExtraInfo] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
+  const [templates, setTemplates] = useState<{id: string, title: string, html_content: string, settings: Record<string, string | number>}[]>([]);
   const [clientSearch, setClientSearch] = useState("");
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
   const [clientDrawerOpen, setClientDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const handleGenerateDocument = async (templateId: string) => {
+    generatePdfFromHtml(templateId, form, clients);
+  };
 
   const fetchClients = async () => {
     try {
@@ -174,9 +181,23 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
     }
   };
 
+  const fetchTemplates = async () => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/templates`);
+      const data = await res.json();
+      if (data.success) {
+        // We will fetch full template data upon click, but let's fetch list for dropdown
+        setTemplates(data.data); 
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     if (open) {
       fetchClients();
+      fetchTemplates();
       if (contract) {
         setForm({
           contract_number: contract.contract_number || "",
@@ -725,9 +746,25 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
             <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 rounded-xl"><FileDown className="h-4 w-4" /> Сформировать <ChevronDown className="h-3 w-3 opacity-50" /></Button>
+                  <Button variant="outline" className="gap-2 rounded-xl" disabled={templates.length === 0}>
+                    <FileDown className="h-4 w-4" /> 
+                    Сформировать 
+                    <ChevronDown className="h-3 w-3 opacity-50" />
+                  </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent><DropdownMenuItem>Договор</DropdownMenuItem><DropdownMenuItem>Счёт</DropdownMenuItem><DropdownMenuItem>Акт</DropdownMenuItem></DropdownMenuContent>
+                <DropdownMenuContent>
+                  {templates.length > 0 ? templates.map(t => (
+                    <DropdownMenuItem 
+                      key={t.id} 
+                      onClick={() => handleGenerateDocument(t.id)}
+                      className="cursor-pointer"
+                    >
+                      {t.title || "Документ"} (PDF)
+                    </DropdownMenuItem>
+                  )) : (
+                    <DropdownMenuItem disabled>Нет шаблонов</DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
               </DropdownMenu>
               <Button variant="outline" className="gap-2 rounded-xl"><Mail className="h-4 w-4" /> Email</Button>
             </div>

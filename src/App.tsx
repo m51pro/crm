@@ -8,6 +8,7 @@ import Chess from "./pages/Chess";
 import Clients from "./pages/Clients";
 import Contracts from "./pages/Contracts";
 import SettingsPage from "./pages/SettingsPage";
+import Templates from "./pages/Templates";
 import NotFound from "./pages/NotFound";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/" element={<Chess />} />
             <Route path="/clients" element={<Clients />} />
             <Route path="/contracts" element={<Contracts />} />
+            <Route path="/templates" element={<Templates />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />

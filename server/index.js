@@ -90,6 +90,18 @@ async function initDb() {
       FOREIGN KEY (contract_id) REFERENCES contracts(id)
     );
 
+    CREATE TABLE IF NOT EXISTS templates (
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      target_property TEXT,
+      client_type TEXT,
+      html_content TEXT,
+      settings TEXT,
+      versions_json TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT
@@ -596,6 +608,70 @@ app.patch("/api/contracts/:id/reminder", async (req, res) => {
     );
 
     res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// TEMPLATES API
+// ============================================
+
+app.get("/api/templates", async (req, res) => {
+  try {
+    const templates = await db.all("SELECT id, title, target_property, client_type, updated_at FROM templates ORDER BY updated_at DESC");
+    res.json({ success: true, data: templates });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/templates/:id", async (req, res) => {
+  try {
+    const template = await db.get("SELECT * FROM templates WHERE id = ?", [req.params.id]);
+    if (!template) return res.status(404).json({ error: "Template not found" });
+    
+    template.settings = template.settings ? JSON.parse(template.settings) : {};
+    template.versions = template.versions_json ? JSON.parse(template.versions_json) : [];
+    
+    res.json({ success: true, data: template });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/templates", async (req, res) => {
+  try {
+    const { id, title, target_property, client_type, html_content, settings } = req.body;
+    const now = new Date().toISOString();
+    const templateId = id || randomUUID();
+    
+    const existing = await db.get("SELECT * FROM templates WHERE id = ?", [templateId]);
+    let versions = existing?.versions_json ? JSON.parse(existing.versions_json) : [];
+    
+    if (existing) {
+       versions.unshift({
+          timestamp: existing.updated_at,
+          title: existing.title,
+          html_content: existing.html_content,
+          settings: existing.settings
+       });
+       versions = versions.slice(0, 10); // Keep max 10 version history
+    }
+    
+    if (existing) {
+       await db.run(
+         `UPDATE templates SET title = ?, target_property = ?, client_type = ?, html_content = ?, settings = ?, versions_json = ?, updated_at = ? WHERE id = ?`,
+         [title, target_property || 'all', client_type || 'all', html_content, JSON.stringify(settings || {}), JSON.stringify(versions), now, templateId]
+       );
+    } else {
+       await db.run(
+         `INSERT INTO templates (id, title, target_property, client_type, html_content, settings, versions_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         [templateId, title, target_property || 'all', client_type || 'all', html_content, JSON.stringify(settings || {}), JSON.stringify(versions), now, now]
+       );
+    }
+
+    res.json({ success: true, id: templateId });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

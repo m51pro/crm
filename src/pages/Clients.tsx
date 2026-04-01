@@ -61,11 +61,13 @@ export default function Clients() {
   const openNew = () => { setSelectedClient(null); setDrawerOpen(true); };
   const openEdit = (c: any) => { setSelectedClient(c as ClientData); setDrawerOpen(true); };
 
-  const filters: { key: FilterType; label: string }[] = [
+  const blacklistCount = useMemo(() => clients.filter((c) => c.is_blacklisted).length, [clients]);
+
+  const filters: { key: FilterType; label: string; isRed?: boolean }[] = [
     { key: "all", label: "Все" },
     { key: "individual", label: "Физлица" },
     { key: "legal_entity", label: "Юрлица" },
-    { key: "blacklist", label: "Чёрный список 🚫" },
+    { key: "blacklist", label: `🚫 Чёрный список${blacklistCount > 0 ? ` (${blacklistCount})` : ""}`, isRed: true },
   ];
 
   return (

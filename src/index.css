@@ -8,121 +8,120 @@
   :root {
     --background: 0 0% 96%;
     --foreground: 0 0% 9%;
-
     --card: 0 0% 100%;
     --card-foreground: 0 0% 9%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
-
     --primary: 0 0% 9%;
     --primary-foreground: 0 0% 98%;
-
     --secondary: 0 0% 94%;
     --secondary-foreground: 0 0% 9%;
-
     --muted: 0 0% 94%;
     --muted-foreground: 0 0% 45%;
-
     --accent: 43 96% 56%;
     --accent-foreground: 0 0% 9%;
-
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 0 0% 88%;
     --input: 0 0% 88%;
     --ring: 43 96% 56%;
-
     --radius: 1.25rem;
-
-    /* Brand */
-    --chunga: 25 95% 53%;
-    --chunga-foreground: 0 0% 100%;
-    --chunga-muted: 25 90% 95%;
-    --bukhta: 199 89% 48%;
-    --bukhta-foreground: 0 0% 100%;
-    --bukhta-muted: 199 80% 95%;
-
-    /* Sidebar — light mode stays dark */
-    --sidebar-bg: 0 0% 10%;
-    --sidebar-fg: 0 0% 82%;
-    --sidebar-active: 0 0% 100%;
-    --sidebar-active-fg: 0 0% 6%;
-    --sidebar-hover: 0 0% 16%;
-    --sidebar-muted: 0 0% 45%;
-
     --font-heading: 'Geologica', sans-serif;
     --font-body: 'Inter', sans-serif;
   }
 
   .dark {
-    /* Near-black, like the reference screenshot */
     --background: 0 0% 7%;
     --foreground: 0 0% 93%;
-
     --card: 0 0% 11%;
-    --card-foreground: 0 0% 93%;
-
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 93%;
-
-    --primary: 0 0% 93%;
-    --primary-foreground: 0 0% 9%;
-
     --secondary: 0 0% 14%;
-    --secondary-foreground: 0 0% 93%;
-
-    --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 50%;
-
     --accent: 43 96% 60%;
-    --accent-foreground: 0 0% 6%;
-
-    --destructive: 0 62% 40%;
-    --destructive-foreground: 0 0% 95%;
-
     --border: 0 0% 17%;
-    --input: 0 0% 17%;
-    --ring: 43 96% 56%;
-
-    /* Brand — vivid on dark */
-    --chunga: 25 90% 58%;
-    --chunga-foreground: 0 0% 100%;
-    --chunga-muted: 25 35% 16%;
-    --bukhta: 199 85% 58%;
-    --bukhta-foreground: 0 0% 100%;
-    --bukhta-muted: 199 35% 16%;
-
-    /* Sidebar — very dark in dark mode */
-    --sidebar-bg: 0 0% 8%;
-    --sidebar-fg: 0 0% 70%;
-    --sidebar-active: 0 0% 100%;
-    --sidebar-active-fg: 0 0% 6%;
-    --sidebar-hover: 0 0% 13%;
-    --sidebar-muted: 0 0% 38%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
+  * { @apply border-border; }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
+}
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
-  }
+/* --- СТИЛИ ДЛЯ РЕДАКТОРА (EDITOR ONLY) --- */
+
+/* Контейнер колонок */
+.ProseMirror .columns-container {
+  display: flex !important;
+  width: 100% !important;
+  gap: 20px !important;
+  margin: 30px 0 !important;
+  padding: 10px !important;
+  background: rgba(245, 158, 11, 0.03) !important;
+  border: 2px dashed rgba(245, 158, 11, 0.4) !important; /* ЯРКИЙ ОРАНЖЕВЫЙ ПУНКТИР */
+  border-radius: 12px !important;
+  position: relative !important;
+}
+
+.ProseMirror .columns-container::before {
+  content: 'БЛОК РЕКВИЗИТОВ (СКРЫТ ПРИ ПЕЧАТИ)';
+  position: absolute;
+  top: -12px;
+  left: 20px;
+  background: #f59e0b;
+  color: black;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* Сами колонки */
+.ProseMirror .column {
+  flex: 1 !important;
+  min-height: 150px !important;
+  padding: 15px !important;
+  border: 1px dashed rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-radius: 8px !important;
+}
+
+.ProseMirror .column:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* --- СТИЛИ ДЛЯ ПРЕДПРОСМОТРА И PDF (CLEAN OUTPUT) --- */
+
+/* Убираем все наши "технические" границы */
+.prose .columns-container,
+.prose .column,
+#preview-area .columns-container,
+#preview-area .column,
+.pdf-export .columns-container,
+.pdf-export .column {
+  border: none !important;
+  background: none !important;
+  padding: 0 !important;
+  margin: 20px 0 !important;
+  box-shadow: none !important;
+}
+
+.prose .columns-container::before {
+  display: none !important;
+}
+
+.prose .columns-container {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 40px !important;
+}
+
+.prose .column {
+  flex: 1 !important;
 }
 
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / 0.15); border-radius: 99px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.3); }

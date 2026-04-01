@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,72 +6,101 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 222 20% 14%;
+    --background: 0 0% 96%;
+    --foreground: 0 0% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 20% 14%;
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 20% 14%;
+    --popover-foreground: 0 0% 9%;
 
-    --primary: 222 30% 15%;
+    --primary: 0 0% 9%;
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 20% 14%;
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 45%;
 
     --accent: 43 96% 56%;
-    --accent-foreground: 222 30% 12%;
+    --accent-foreground: 0 0% 9%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
     --ring: 43 96% 56%;
 
-    --radius: 0.5rem;
+    --radius: 1.25rem;
 
-    /* Custom CRM tokens */
-    --sidebar-bg: 227 28% 14%;
-    --sidebar-fg: 220 14% 80%;
-    --sidebar-active: 43 96% 56%;
-    --sidebar-hover: 227 25% 18%;
-    --sidebar-muted: 220 14% 50%;
+    /* Brand */
+    --chunga: 25 95% 53%;
+    --chunga-foreground: 0 0% 100%;
+    --chunga-muted: 25 90% 95%;
+    --bukhta: 199 89% 48%;
+    --bukhta-foreground: 0 0% 100%;
+    --bukhta-muted: 199 80% 95%;
 
-    --teal: 168 82% 32%;
-    --teal-foreground: 0 0% 100%;
-    --forest: 142 64% 30%;
-    --forest-foreground: 0 0% 100%;
+    /* Sidebar — light mode stays dark */
+    --sidebar-bg: 0 0% 10%;
+    --sidebar-fg: 0 0% 82%;
+    --sidebar-active: 0 0% 100%;
+    --sidebar-active-fg: 0 0% 6%;
+    --sidebar-hover: 0 0% 16%;
+    --sidebar-muted: 0 0% 45%;
 
     --font-heading: 'Geologica', sans-serif;
     --font-body: 'Inter', sans-serif;
   }
 
   .dark {
-    --background: 222 20% 8%;
-    --foreground: 0 0% 95%;
-    --card: 222 20% 11%;
-    --card-foreground: 0 0% 95%;
-    --popover: 222 20% 11%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 0 0% 95%;
-    --primary-foreground: 222 20% 11%;
-    --secondary: 222 15% 16%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 222 15% 16%;
-    --muted-foreground: 220 9% 55%;
-    --accent: 43 96% 56%;
-    --accent-foreground: 222 30% 12%;
-    --destructive: 0 62% 30%;
+    /* Near-black, like the reference screenshot */
+    --background: 0 0% 7%;
+    --foreground: 0 0% 93%;
+
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 93%;
+
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 93%;
+
+    --primary: 0 0% 93%;
+    --primary-foreground: 0 0% 9%;
+
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 93%;
+
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 50%;
+
+    --accent: 43 96% 60%;
+    --accent-foreground: 0 0% 6%;
+
+    --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 95%;
-    --border: 222 15% 20%;
-    --input: 222 15% 20%;
+
+    --border: 0 0% 17%;
+    --input: 0 0% 17%;
     --ring: 43 96% 56%;
+
+    /* Brand — vivid on dark */
+    --chunga: 25 90% 58%;
+    --chunga-foreground: 0 0% 100%;
+    --chunga-muted: 25 35% 16%;
+    --bukhta: 199 85% 58%;
+    --bukhta-foreground: 0 0% 100%;
+    --bukhta-muted: 199 35% 16%;
+
+    /* Sidebar — very dark in dark mode */
+    --sidebar-bg: 0 0% 8%;
+    --sidebar-fg: 0 0% 70%;
+    --sidebar-active: 0 0% 100%;
+    --sidebar-active-fg: 0 0% 6%;
+    --sidebar-hover: 0 0% 13%;
+    --sidebar-muted: 0 0% 38%;
   }
 }
 
@@ -83,9 +112,17 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
   }
 }
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / 0.15); border-radius: 99px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.3); }

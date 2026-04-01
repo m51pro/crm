@@ -111,6 +111,7 @@ export function DateNavBar({ date, onDateChange, onExportPdf }: DateNavBarProps)
               onSelect={(d) => d && onDateChange(d)}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
+              locale={ru}
             />
           </PopoverContent>
         </Popover>
@@ -127,7 +128,12 @@ export function DateNavBar({ date, onDateChange, onExportPdf }: DateNavBarProps)
         )}
       </div>
 
-      <Button variant="outline" size="sm" onClick={onExportPdf}>
+      <Button 
+        variant="secondary" 
+        size="sm" 
+        onClick={onExportPdf}
+        className="rounded-2xl px-5 h-9 font-bold bg-white/50 backdrop-blur-sm border-white/20 hover:bg-white/80 transition-all text-muted-foreground"
+      >
         Экспорт PDF
       </Button>
     </div>

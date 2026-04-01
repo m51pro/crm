@@ -49,25 +49,13 @@ export const HOURS_GB_BANYA = [
 
 export const BOOKING_COLORS = {
   pre_booking: [
-    "bg-blue-50 border-blue-300 text-blue-800",
-    "bg-emerald-50 border-emerald-300 text-emerald-800",
-    "bg-amber-50 border-amber-300 text-amber-800",
-    "bg-purple-50 border-purple-300 text-purple-800",
-    "bg-rose-50 border-rose-300 text-rose-800",
+    "bg-sky-300 text-sky-950 border-none",
   ],
   contract_signed: [
-    "bg-blue-100 border-blue-400 text-blue-900",
-    "bg-emerald-100 border-emerald-400 text-emerald-900",
-    "bg-amber-100 border-amber-400 text-amber-900",
-    "bg-purple-100 border-purple-400 text-purple-900",
-    "bg-rose-100 border-rose-400 text-rose-900",
+    "bg-amber-500 text-amber-950 border-none shadow-sm",
   ],
   contract_paid: [
-    "bg-blue-200 border-blue-500 text-blue-950",
-    "bg-emerald-200 border-emerald-500 text-emerald-950",
-    "bg-amber-200 border-amber-500 text-amber-950",
-    "bg-purple-200 border-purple-500 text-purple-950",
-    "bg-rose-200 border-rose-500 text-rose-950",
+    "bg-emerald-500 text-white border-none shadow-md",
   ],
 };
 
@@ -76,15 +64,21 @@ export type BookingStatus = "pre_booking" | "contract_signed" | "contract_paid";
 export interface Booking {
   id: string;
   cottageId: string;
+  property?: string;
   clientName: string;
   phone: string;
   email?: string;
   checkInHour: number;
   checkOutHour: number;
+  check_in_hour?: number;
+  check_out_hour?: number;
   guestCount: number;
+  guest_count?: number;
   contractNumber?: string;
   checkInDate?: string;
   checkOutDate?: string;
+  checkin_at?: string;
+  checkout_at?: string;
   isDaily?: boolean;
   status: BookingStatus;
   notes?: string;
@@ -191,9 +185,9 @@ export const MOCK_BOOKINGS_GB_BANYA: Booking[] = [
   },
 ];
 
-export function getBookingColor(index: number, status: BookingStatus = "contract_signed"): string {
+export function getBookingColor(_index: number, status: BookingStatus = "contract_signed"): string {
   const palette = BOOKING_COLORS[status];
-  return palette[index % palette.length];
+  return palette[0];
 }
 
 export function formatHour(h: number): string {

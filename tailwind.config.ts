@@ -58,6 +58,16 @@ export default {
           hover: "hsl(var(--sidebar-hover))",
           muted: "hsl(var(--sidebar-muted))",
         },
+        chunga: {
+          DEFAULT: "hsl(var(--chunga))",
+          foreground: "hsl(var(--chunga-foreground))",
+          muted: "hsl(var(--chunga-muted))",
+        },
+        bukhta: {
+          DEFAULT: "hsl(var(--bukhta))",
+          foreground: "hsl(var(--bukhta-foreground))",
+          muted: "hsl(var(--bukhta-muted))",
+        },
         teal: {
           DEFAULT: "hsl(var(--teal))",
           foreground: "hsl(var(--teal-foreground))",
@@ -69,8 +79,9 @@ export default {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
+        "4xl": "2rem",
       },
       keyframes: {
         "accordion-down": {

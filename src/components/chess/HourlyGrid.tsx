@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { isToday } from "date-fns";
+import { isToday, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 import {
@@ -30,11 +30,11 @@ interface HourlyGridProps {
   bookings: Booking[];
   date: Date;
   accentClass?: string;
+  onRefresh?: () => void;
 }
 
 const ROW_H = 48;
-const COL_W = 130;
-const TIME_W = 70;
+const TIME_W = 64;
 
 function StatusIndicator({ status }: { status: BookingStatus }) {
   if (status === "contract_paid") {
@@ -43,7 +43,7 @@ function StatusIndicator({ status }: { status: BookingStatus }) {
   return null;
 }
 
-export function HourlyGrid({ columns, hours, bookings, date, accentClass = "bg-forest" }: HourlyGridProps) {
+export function HourlyGrid({ columns, hours, bookings, date, accentClass = "bg-forest", onRefresh }: HourlyGridProps) {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [quickBook, setQuickBook] = useState<{ cottageId: string; hour: number } | null>(null);
 
@@ -56,7 +56,14 @@ export function HourlyGrid({ columns, hours, bookings, date, accentClass = "bg-f
   const bookingMap = useMemo(() => {
     const map = new Map<string, (Booking & { colorClass: string; startIdx: number; span: number })[]>();
     bookings.forEach((b, i) => {
-      const { startIdx, span } = getHourSpan(b.checkInHour, b.checkOutHour, hours);
+      // Filter by date
+      const dateStr = b.checkin_at || b.checkInDate;
+      if (dateStr && !isSameDay(new Date(dateStr), date)) return;
+      
+      const cInH = b.check_in_hour !== undefined ? b.check_in_hour : b.checkInHour;
+      const cOutH = b.check_out_hour !== undefined ? b.check_out_hour : b.checkOutHour;
+
+      const { startIdx, span } = getHourSpan(cInH, cOutH, hours);
       if (span === 0) return;
       const entry = { ...b, colorClass: getBookingColor(i, b.status), startIdx, span };
       const arr = map.get(b.cottageId) || [];
@@ -64,7 +71,7 @@ export function HourlyGrid({ columns, hours, bookings, date, accentClass = "bg-f
       map.set(b.cottageId, arr);
     });
     return map;
-  }, [bookings, hours]);
+  }, [bookings, hours, date]);
 
   const occupiedCells = useMemo(() => {
     const set = new Set<string>();
@@ -80,11 +87,11 @@ export function HourlyGrid({ columns, hours, bookings, date, accentClass = "bg-f
 
   return (
     <>
-      <div className="relative overflow-auto border rounded-lg bg-card">
+      <div className="relative w-full overflow-x-auto">
         <div
-          className="grid"
+          className="grid min-w-0"
           style={{
-            gridTemplateColumns: `${TIME_W}px repeat(${columns.length}, ${COL_W}px)`,
+            gridTemplateColumns: `${TIME_W}px repeat(${columns.length}, minmax(80px, 1fr))`,
             gridTemplateRows: `auto repeat(${hours.length}, ${ROW_H}px)`,
           }}
         >
@@ -161,10 +168,7 @@ export function HourlyGrid({ columns, hours, bookings, date, accentClass = "bg-f
                           <div
                             className={cn(
                               "absolute left-0.5 right-0.5 rounded px-1.5 py-1 overflow-hidden cursor-pointer z-[5]",
-                              startingBooking.colorClass,
-                              startingBooking.status === "pre_booking"
-                                ? "border-dashed border-2"
-                                : "border border-solid"
+                              startingBooking.colorClass
                             )}
                             style={{
                               top: 1,
@@ -175,11 +179,11 @@ export function HourlyGrid({ columns, hours, bookings, date, accentClass = "bg-f
                               setSelectedBooking(startingBooking);
                             }}
                           >
-                            <p className="text-[11px] font-semibold truncate leading-tight">
+                            <p className="text-[12px] font-bold truncate leading-tight">
                               {startingBooking.clientName}
                               <StatusIndicator status={startingBooking.status} />
                             </p>
-                            <p className="text-[10px] truncate opacity-80">
+                            <p className="text-[11px] truncate opacity-90 font-black tracking-tight">
                               {startingBooking.phone}
                             </p>
                             {startingBooking.status === "pre_booking" && (
@@ -223,6 +227,7 @@ export function HourlyGrid({ columns, hours, bookings, date, accentClass = "bg-f
       <BookingDrawer
         booking={selectedBooking}
         onClose={() => setSelectedBooking(null)}
+        onRefresh={onRefresh}
       />
 
       <PreBookingForm
@@ -230,6 +235,8 @@ export function HourlyGrid({ columns, hours, bookings, date, accentClass = "bg-f
         cottageId={quickBook?.cottageId}
         hour={quickBook?.hour}
         onClose={() => setQuickBook(null)}
+        onRefresh={onRefresh}
+        date={date}
       />
     </>
   );

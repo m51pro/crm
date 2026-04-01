@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { format } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
@@ -21,6 +21,7 @@ interface DailyGridProps {
   columns: Column[];
   bookings: Booking[];
   date: Date;
+  onRefresh?: () => void;
 }
 
 const CELL_H = 120;
@@ -32,23 +33,33 @@ function StatusIndicator({ status }: { status: BookingStatus }) {
   return null;
 }
 
-export function DailyGrid({ columns, bookings, date }: DailyGridProps) {
+export function DailyGrid({ columns, bookings, date, onRefresh }: DailyGridProps) {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [quickBook, setQuickBook] = useState<string | null>(null);
 
   const bookingMap = useMemo(() => {
     const map = new Map<string, Booking & { colorClass: string }>();
     bookings.forEach((b, i) => {
+      // Filter by date range for daily grid (fallback checkin_at -> checkInDate)
+      const startStr = b.checkin_at || b.checkInDate;
+      const endStr = b.checkout_at || b.checkOutDate;
+
+      if (startStr && endStr) {
+        const start = startOfDay(new Date(startStr));
+        const end = endOfDay(new Date(endStr));
+        const current = startOfDay(date);
+        if (!isWithinInterval(current, { start, end })) return;
+      }
       map.set(b.cottageId, { ...b, colorClass: getBookingColor(i, b.status) });
     });
     return map;
-  }, [bookings]);
+  }, [bookings, date]);
 
   return (
     <>
-      <div className="border rounded-lg bg-card overflow-auto">
+      <div className="relative w-full overflow-x-auto">
         <div
-          className="grid"
+          className="grid min-w-0"
           style={{
             gridTemplateColumns: `repeat(${columns.length}, minmax(130px, 1fr))`,
           }}
@@ -91,22 +102,21 @@ export function DailyGrid({ columns, bookings, date }: DailyGridProps) {
                     <TooltipTrigger asChild>
                       <div
                         className={cn(
-                          "rounded px-2 py-2 h-full cursor-pointer",
-                          booking.colorClass,
-                          booking.status === "pre_booking"
-                            ? "border-dashed border-2"
-                            : "border border-solid"
+                          "rounded px-2 py-2 h-full cursor-pointer shadow-sm",
+                          booking.colorClass
                         )}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedBooking(booking);
                         }}
                       >
-                        <p className="text-xs font-semibold truncate">
+                        <p className="text-sm font-bold truncate">
                           {booking.clientName}
                           <StatusIndicator status={booking.status} />
                         </p>
-                        <p className="text-[10px] opacity-80 mt-0.5">{booking.phone}</p>
+                        <p className="text-[11px] opacity-90 mt-1 font-extrabold tracking-tight">
+                          {booking.phone}
+                        </p>
                         {booking.status === "pre_booking" && (
                           <p className="text-[9px] text-muted-foreground mt-0.5 uppercase tracking-wide">
                             Предбронь
@@ -140,13 +150,15 @@ export function DailyGrid({ columns, bookings, date }: DailyGridProps) {
         </div>
       </div>
 
-      <BookingDrawer booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
+      <BookingDrawer booking={selectedBooking} onClose={() => setSelectedBooking(null)} onRefresh={onRefresh} />
       <PreBookingForm
         open={!!quickBook}
         cottageId={quickBook ?? undefined}
         hour={undefined}
         isDaily
         onClose={() => setQuickBook(null)}
+        onRefresh={onRefresh}
+        date={date}
       />
     </>
   );

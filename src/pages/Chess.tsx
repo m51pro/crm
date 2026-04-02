@@ -24,9 +24,7 @@ export default function Chess() {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const url = new URL(apiFetch("/bookings").url);
-      url.searchParams.set("date", date.toISOString().slice(0, 10));
-      const res = await fetch(url.toString());
+      const res = await apiFetch(`/bookings?date=${date.toISOString().slice(0, 10)}`);
       const data = await res.json();
       setBookings(Array.isArray(data) ? data : data.data || []);
     } catch (e) {
@@ -38,20 +36,28 @@ export default function Chess() {
 
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [date]);
 
   const activeChunga = useMemo(() => {
     const saved = localStorage.getItem('chess_cottages_chunga');
     if (!saved) return CHUNGA_CHANGA_COTTAGES;
-    const items = JSON.parse(saved);
-    return CHUNGA_CHANGA_COTTAGES.filter(c => items.find((i: { id: string; active: boolean }) => i.id === c.id)?.active !== false);
+    try {
+      const items = JSON.parse(saved);
+      return CHUNGA_CHANGA_COTTAGES.filter(c => items.find((i: { id: string; active: boolean }) => i.id === c.id)?.active !== false);
+    } catch {
+      return CHUNGA_CHANGA_COTTAGES;
+    }
   }, []);
 
   const activeGb = useMemo(() => {
     const saved = localStorage.getItem('chess_cottages_gb');
     if (!saved) return GB_COTTAGES;
-    const items = JSON.parse(saved);
-    return GB_COTTAGES.filter(c => items.find((i: { id: string; active: boolean }) => i.id === c.id)?.active !== false);
+    try {
+      const items = JSON.parse(saved);
+      return GB_COTTAGES.filter(c => items.find((i: { id: string; active: boolean }) => i.id === c.id)?.active !== false);
+    } catch {
+      return GB_COTTAGES;
+    }
   }, []);
 
   // Split bookings by property for grids

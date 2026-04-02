@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { FileText, Plus, Search, Eye, Pencil, FileDown, X, AlertTriangle, CalendarIcon, Check, Clock } from "lucide-react";
-import { format, differenceInHours } from "date-fns";
+import { format, differenceInHours, startOfDay, endOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import ContractModal from "@/components/contracts/ContractModal";
@@ -65,13 +65,15 @@ export default function Contracts() {
 
   const getComputedStatus = useCallback((c: Contract): ContractStatus => {
     if (c.status === "cancelled") return "cancelled";
+    if (c.status === "pre_booking") return "pre_booking";
+
     const rent = Number(c.total || c.rent_price || 0);
     const prepay = Number(c.prepayment || 0);
-    if (c.status === "pre_booking" && prepay === 0 && rent === 0) return "pre_booking";
-    if (prepay === 0) return "not_paid"; 
+    if (rent <= 0) return prepay > 0 ? "partial_paid" : "not_paid";
+
     const remains = Math.max(0, rent - prepay);
-    if (remains === 0) return "paid"; 
-    if (remains > 0 && remains < rent) return "partial_paid";
+    if (remains === 0) return "paid";
+    if (prepay > 0) return "partial_paid";
     return "not_paid";
   }, []);
 
@@ -86,8 +88,8 @@ export default function Contracts() {
       list = list.filter(c => getComputedStatus(c) === statusFilter);
     }
     if (propertyFilter !== "all") list = list.filter(c => c.property === propertyFilter);
-    if (dateFrom) list = list.filter(c => c.check_in_date && new Date(c.check_in_date) >= dateFrom);
-    if (dateTo) list = list.filter(c => c.check_in_date && new Date(c.check_in_date) <= dateTo);
+    if (dateFrom) list = list.filter(c => c.check_in_date && new Date(c.check_in_date) >= startOfDay(dateFrom));
+    if (dateTo) list = list.filter(c => c.check_in_date && new Date(c.check_in_date) <= endOfDay(dateTo));
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(c => {
@@ -105,11 +107,12 @@ export default function Contracts() {
     const target = contracts.find(c => c.id === id);
     if (!target) return;
     try {
-      await fetch(`${API_URL}/contracts/${id}`, {
+      const res = await fetch(`${API_URL}/contracts/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...target, status: "cancelled", updated_at: new Date().toISOString() })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       fetchContracts();
     } catch(e) { console.error(e); }
   };
@@ -311,7 +314,7 @@ export default function Contracts() {
                           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={() => openEdit(c)} title="Редактировать">
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" title="Сгенерировать документ">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" title="Сгенерировать документ" onClick={() => setModalOpen(true)}>
                             <FileDown className="h-3.5 w-3.5" />
                           </Button>
                           {c.status !== "cancelled" && (

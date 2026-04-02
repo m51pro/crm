@@ -49,8 +49,15 @@ Handlebars.registerHelper('decline_fio', function(fio: string, gcase: string) {
 
 export const prepareTemplateVariables = (form: Record<string, unknown>, clients: Record<string, unknown>[]) => {
   const clientMatch = (clients.find(c => c.id === form.client_id) || {}) as Record<string, unknown>;
+  const clientFullName = String(
+    clientMatch.name ||
+    [clientMatch.last_name, clientMatch.first_name, clientMatch.middle_name].filter(Boolean).join(" ") ||
+    form.client_name ||
+    ""
+  );
+
   const client: Record<string, string> = {
-    name: String(clientMatch.name || form.client_name || ""),
+    name: clientFullName,
     phone: String(clientMatch.phone || form.client_phone || ""),
     first_name: String(clientMatch.first_name || ""),
     inn: String(clientMatch.inn || String(clientMatch.client_inn || "")),
@@ -67,6 +74,7 @@ export const prepareTemplateVariables = (form: Record<string, unknown>, clients:
     if (!value || typeof value !== "string") return fallback;
     try {
       const parsed = value.includes("T") ? new Date(value) : new Date(value.replace(/\./g, "-"));
+      if (Number.isNaN(parsed.getTime())) return fallback;
       return format(parsed, "dd.MM.yyyy");
     } catch {
       return fallback;

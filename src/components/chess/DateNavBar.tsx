@@ -128,11 +128,11 @@ export function DateNavBar({ date, onDateChange, onExportPdf }: DateNavBarProps)
         )}
       </div>
 
-      <Button 
-        variant="secondary" 
-        size="sm" 
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={onExportPdf}
-        className="rounded-2xl px-5 h-9 font-bold bg-white/50 backdrop-blur-sm border-white/20 hover:bg-white/80 transition-all text-muted-foreground"
+        className="rounded-xl px-5 h-9 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm"
       >
         Экспорт PDF
       </Button>

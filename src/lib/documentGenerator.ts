@@ -85,7 +85,7 @@ export const prepareTemplateVariables = (form: Record<string, unknown>, clients:
   const data = {
     // New Flat Variables (as requested)
     doc_number: form.contract_number || "",
-    doc_date: format(new Date(), "dd MMMM yyyy", { locale: ru }),
+    doc_date: formatDateValue(form.contract_date || form.contract_date, format(new Date(), "dd MMMM yyyy", { locale: ru })),
     doc_amount: grossAmount.toString(),
     vat_amount: vatAmount.toFixed(2),
     doc_amount_words: toWords(grossAmount),
@@ -138,12 +138,12 @@ export const prepareTemplateVariables = (form: Record<string, unknown>, clients:
     },
     contract: {
       number: form.contract_number || form.contractNumber || "",
-      date: format(new Date(), "dd MMMM yyyy", { locale: ru }),
+      date: formatDateValue(form.contract_date, format(new Date(), "dd MMMM yyyy", { locale: ru })),
       checkin: formatDateValue(form.checkin_at || form.checkin_at_date || form.check_in_date),
       checkin_time: form.checkin_at_time || (form.checkInHour !== undefined ? `${form.checkInHour}:00` : "14:00"),
       checkout: formatDateValue(form.checkout_at || form.checkout_at_date || form.check_out_date),
       checkout_time: form.checkout_at_time || (form.checkOutHour !== undefined ? `${form.checkOutHour}:00` : "12:00"),
-      days: form.guest_count || form.guestCount || 1,
+      days: form.days || form.guest_count || form.guestCount || 1,
       rent_price: form.rent_price || "0",
       prepayment: form.prepayment || form.prepayment_amount || "0",
       total_due: (grossAmount - prepayment).toString(),

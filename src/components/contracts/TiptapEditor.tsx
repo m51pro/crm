@@ -160,19 +160,15 @@ export function TiptapEditor({
 
   return (
     <div className="flex flex-col h-full bg-[#0a0a0b] relative">
-      {/* PROFESSIONAL DESIGNER STYLES */}
       <style>{`
-        /* Стили для имитации страниц A4 */
         .ProseMirror {
           outline: none !important;
           border: none !important;
-          /* Создаем эффект разрыва страниц каждые 297мм */
           background-image: linear-gradient(to bottom, transparent 296mm, #e2e8f0 296mm, #e2e8f0 297mm);
           background-size: 100% 297mm;
           position: relative;
+          font-family: Inter, system-ui, sans-serif;
         }
-
-        /* Исправление списков */
         .ProseMirror ul {
           list-style-type: disc !important;
           padding-left: 1.5rem !important;
@@ -187,34 +183,20 @@ export function TiptapEditor({
           display: list-item !important;
           margin-bottom: 5px !important;
         }
-
-        /* Красная строка (абзацный отступ) */
-        .ProseMirror p {
-          margin-bottom: 0.5em;
-        }
-        
-        .indent-first-line {
-          text-indent: 1.25cm;
-        }
-        
-        /* Делаем границы таблиц видимыми и четкими в редакторе */
+        .ProseMirror p { margin-bottom: 0.5em; }
+        .indent-first-line { text-indent: 1.25cm; }
         .ProseMirror table {
           border-collapse: collapse !important;
           margin: 10px 0 !important;
           width: 100% !important;
-          /* Тёмно-серый цвет для контура всей таблицы */
-          border: 1px solid #94a3b8 !important; 
+          border: 1px solid #94a3b8 !important;
         }
-        
         .ProseMirror td, .ProseMirror th {
-          /* Светло-серый цвет для внутренних ячеек */
           border: 1px solid #cbd5e1 !important;
           padding: 8px !important;
           min-width: 1em !important;
           position: relative !important;
         }
-
-        /* Подсветка выделенной ячейки */
         .ProseMirror .selectedCell:after {
           background: rgba(200, 200, 255, 0.4);
           content: "";
@@ -223,8 +205,6 @@ export function TiptapEditor({
           position: absolute;
           z-index: 2;
         }
-
-        /* Ручки изменения размера колонок (синие) */
         .ProseMirror .column-resize-handle {
           position: absolute !important;
           right: -2px !important;
@@ -236,7 +216,6 @@ export function TiptapEditor({
           z-index: 20 !important;
           pointer-events: auto !important;
         }
-
         .ProseMirror hr {
           border: none !important;
           border-top: 1px solid #000 !important;
@@ -244,8 +223,7 @@ export function TiptapEditor({
         }
       `}</style>
 
-      {/* ГЛАВНЫЙ ТУЛБАР (Увеличенный дизайн по центру) */}
-      <div className="sticky top-0 z-40 flex flex-wrap items-center justify-center gap-4 bg-background/95 backdrop-blur-md border-b border-border p-4 w-full shadow-md transition-all">
+      <div className="sticky top-0 z-40 flex flex-wrap items-center justify-center gap-2 bg-background/90 backdrop-blur-md border-b border-border/60 p-3 w-full shadow-sm transition-all">
         {/* Отмена / Повтор */}
         <div className="flex items-center gap-1 bg-muted/40 p-1.5 rounded-2xl border border-border/50 shadow-sm">
           <Button

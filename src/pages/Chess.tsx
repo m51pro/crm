@@ -67,6 +67,14 @@ export default function Chess() {
     <div className="flex flex-col h-full bg-background text-foreground">
       <DateNavBar date={date} onDateChange={setDate} onExportPdf={handleExportPdf} />
 
+      {loading && (
+        <div className="absolute inset-x-0 top-16 z-20 px-6">
+          <div className="rounded-2xl border border-border/60 bg-background/90 backdrop-blur-sm px-4 py-2 text-xs text-muted-foreground shadow-sm">
+            Загрузка бронирований...
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-auto flex flex-col pb-6 gap-4">
         <div className="px-6 pt-6">
           <NotifierAlert />

@@ -174,14 +174,22 @@ export const generatePdfFromHtml = async (templateId: string, formContext: Recor
 
         const compiler = Handlebars.compile(cleanHtml);
         const mappedData = prepareTemplateVariables(formContext, clients);
-        const processedHtml = compiler(mappedData);
 
-        // Build HTML wrapper for PDF print
-        const stampElement = settings.stampBase64 
-            ? `<div style="position: absolute; right: 40px; bottom: 40px; opacity: 0.8; mix-blend-mode: multiply; pointer-events: none;">
-                 <img src="${settings.stampBase64}" style="max-width: 150px; object-fit: contain;" />
-               </div>` 
-            : "";
+        // Добавляем изображения в объект данных, чтобы Handlebars мог их вставить
+        const dataWithImages = {
+          ...mappedData,
+          my_stamp: settings.stampBase64 
+            ? `<img src="${settings.stampBase64}" style="position: absolute; width: 120px; margin-left: -60px; margin-top: -50px; mix-blend-mode: multiply; transform: rotate(-5deg); z-index: 10;" />` 
+            : "",
+          my_signature: settings.signatureBase64 
+            ? `<img src="${settings.signatureBase64}" style="width: 150px; vertical-align: middle; mix-blend-mode: multiply;" />` 
+            : ""
+        };
+
+        const processedHtml = compiler(dataWithImages);
+
+        // Отключаем старую печать в углу (теперь она вставляется через {{my_stamp}} в тексте)
+        const stampElement = "";
 
         const fullDocument = `
           <!DOCTYPE html>
@@ -203,6 +211,10 @@ export const generatePdfFromHtml = async (templateId: string, formContext: Recor
                 .prose p { margin: 0 0 0.5em 0; }
                 .prose strong { font-weight: bold; }
                 .prose h1, .prose h2, .prose h3 { margin: 1em 0 0.5em 0; text-align: center; }
+                .prose ul { list-style-type: disc !important; padding-left: 20pt !important; margin: 10px 0 !important; }
+                .prose ol { list-style-type: decimal !important; padding-left: 20pt !important; margin: 10px 0 !important; }
+                .prose li { display: list-item !important; margin-bottom: 5px !important; }
+                .indent-first-line { text-indent: 1.25cm !important; }
                 table { border-collapse: collapse; width: 100%; margin-bottom: 1em; table-layout: fixed; }
                 table, th, td { border: 1px solid #000; padding: 8px; vertical-align: top; }
                 hr { border: none; border-top: 1px solid #000; margin: 10px 0; }

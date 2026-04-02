@@ -16,7 +16,7 @@ declare module '@tiptap/core' {
 
 const VariableComponent = (props: NodeViewProps) => {
   const { id, label } = props.node.attrs
-  const storage = props.editor.storage.variable || {}
+  const storage = (props.editor.storage as any).variable || {}
   
   const isStamp = id === 'my_stamp'
   const isSignature = id === 'my_signature'
@@ -26,7 +26,7 @@ const VariableComponent = (props: NodeViewProps) => {
     return (
       <NodeViewWrapper
         as="span"
-        className="inline-block align-middle select-none cursor-default relative group"
+        className="inline-block align-middle select-none cursor-default relative"
         contentEditable={false}
         data-type="variable"
         data-id={id}
@@ -34,12 +34,21 @@ const VariableComponent = (props: NodeViewProps) => {
         <img 
           src={imageSrc} 
           alt={label || id} 
-          className={`max-h-[60px] object-contain mix-blend-multiply pointer-events-none transition-all ${isStamp ? 'w-[80px]' : 'w-[120px]'}`} 
-          style={{ verticalAlign: 'middle' }}
+          className="mix-blend-multiply pointer-events-none transition-all"
+          style={{ 
+            verticalAlign: 'middle',
+            maxHeight: isStamp ? '120px' : '60px',
+            /* Для печати добавляем смещение, чтобы она ложилась ПОВЕРХ текста */
+            position: isStamp ? 'absolute' : 'relative',
+            left: isStamp ? '-40px' : '0',
+            top: isStamp ? '-60px' : '0',
+            zIndex: isStamp ? 10 : 1,
+            transform: isStamp ? 'rotate(-5deg)' : 'none',
+            maxWidth: 'none'
+          }}
         />
-        <div className="absolute -top-4 left-0 bg-amber-500 text-white text-[8px] px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-          {label || id}
-        </div>
+        {/* Заглушка, чтобы иконка переменной занимала немного места в строке */}
+        {isStamp && <span className="inline-block w-8 h-4" />}
       </NodeViewWrapper>
     )
   }
@@ -47,7 +56,7 @@ const VariableComponent = (props: NodeViewProps) => {
   return (
     <NodeViewWrapper
       as="span"
-      className="inline-flex items-center align-middle bg-amber-500/20 text-amber-500 font-mono text-[11px] px-1.5 py-0.5 rounded-md border border-amber-500/30 mx-1 select-none cursor-default"
+      className="inline-flex items-center align-middle bg-amber-500/10 text-amber-600 font-mono text-[11px] px-1.5 py-0.5 rounded border border-amber-500/20 mx-1 select-none cursor-default"
       contentEditable={false}
       data-type="variable"
       data-id={id}

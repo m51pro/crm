@@ -113,22 +113,34 @@ export function TiptapEditor({
           border: none !important;
         }
         
-        /* Видимые границы таблиц в редакторе (Серый пунктир как в Word) */
+        /* Делаем границы таблиц видимыми и четкими в редакторе */
         .ProseMirror table {
           border-collapse: collapse !important;
           margin: 10px 0 !important;
           width: 100% !important;
-          border: 1px solid #e2e8f0 !important;
+          /* Тёмно-серый цвет для контура всей таблицы */
+          border: 1px solid #94a3b8 !important; 
         }
         
         .ProseMirror td, .ProseMirror th {
-          border: 1px solid #e2e8f0 !important;
+          /* Светло-серый цвет для внутренних ячеек */
+          border: 1px solid #cbd5e1 !important;
           padding: 8px !important;
           min-width: 1em !important;
           position: relative !important;
         }
 
-        /* Ручки изменения размера колонок */
+        /* Подсветка выделенной ячейки */
+        .ProseMirror .selectedCell:after {
+          background: rgba(200, 200, 255, 0.4);
+          content: "";
+          left: 0; right: 0; top: 0; bottom: 0;
+          pointer-events: none;
+          position: absolute;
+          z-index: 2;
+        }
+
+        /* Ручки изменения размера колонок (синие) */
         .ProseMirror .column-resize-handle {
           position: absolute !important;
           right: -2px !important;
@@ -141,13 +153,6 @@ export function TiptapEditor({
           pointer-events: auto !important;
         }
 
-        /* Убираем границы в финальном PDF, если они не заданы явно (через CSS) */
-        .prose table, .prose td, .prose th,
-        #preview-area table, #preview-area td, #preview-area th {
-          border: none !important;
-        }
-        
-        /* Линия внутри документа */
         .ProseMirror hr {
           border: none !important;
           border-top: 1px solid #000 !important;

@@ -52,7 +52,7 @@ export function DateNavBar({ date, onDateChange, onExportPdf }: DateNavBarProps)
   };
 
   return (
-    <div className="sticky top-0 z-30 bg-card border-b px-6 py-3 flex items-center justify-between">
+    <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/60 px-5 py-3.5 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
@@ -75,7 +75,7 @@ export function DateNavBar({ date, onDateChange, onExportPdf }: DateNavBarProps)
             onBlur={commitDate}
             placeholder="ДД.ММ.ГГГГ"
             className={cn(
-              "w-[180px] h-8 text-center font-heading text-sm font-semibold",
+              "w-[180px] h-9 text-center font-mono text-sm font-semibold bg-background border-border/70 rounded-xl",
               shake && "animate-shake"
             )}
           />

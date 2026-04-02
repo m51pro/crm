@@ -3,7 +3,7 @@ import { convert as convertAmountToWords } from "number-to-words-ru";
 import { incline } from "lvovich";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { API_URL } from "@/lib/api";
+import { API_URL, apiFetch } from "@/lib/api";
 
 // Highlight missing placeholders with [?]
 Handlebars.registerHelper('helperMissing', function() {
@@ -57,10 +57,21 @@ export const prepareTemplateVariables = (form: Record<string, unknown>, clients:
     passport: String(clientMatch.passport || ""),
   };
   
-  const grossAmount = Number(form.total || form.rent_price || 0);
-  const prepayment = Number(form.prepayment || 0);
-  const vatRate = 0.05; // 5% НДС (включен в стоимость)
-  const vatAmount = grossAmount * (5 / 105);
+  const grossAmount = Number(form.total || form.total_amount || form.rent_price || 0);
+  const prepayment = Number(form.prepayment || form.prepayment_amount || 0);
+  const vatRate = 0.05;
+  const vatAmount = grossAmount * (vatRate / (1 + vatRate));
+  const cottageName = String((form as Record<string, unknown>).cottage_name || (form as Record<string, unknown>).cottageId || form.cottage_id || "Не указан");
+  const propertyName = String((form as Record<string, unknown>).property_name || (form as Record<string, unknown>).property || "");
+  const formatDateValue = (value: unknown, fallback = "") => {
+    if (!value || typeof value !== "string") return fallback;
+    try {
+      const parsed = value.includes("T") ? new Date(value) : new Date(value.replace(/\./g, "-"));
+      return format(parsed, "dd.MM.yyyy");
+    } catch {
+      return fallback;
+    }
+  };
 
   const toWords = (num: number) => {
     try {
@@ -80,10 +91,12 @@ export const prepareTemplateVariables = (form: Record<string, unknown>, clients:
     doc_amount_words: toWords(grossAmount),
     vat_amount_words: toWords(Math.floor(vatAmount)),
     doc_prepayment: prepayment.toString(),
-    deal_start: form.checkin_at_date && typeof form.checkin_at_date === "string" ? format(new Date(form.checkin_at_date), "dd.MM.yyyy") : "",
-    deal_end: form.checkout_at_date && typeof form.checkout_at_date === "string" ? format(new Date(form.checkout_at_date), "dd.MM.yyyy") : "",
-    guest_count: form.guest_count || "1",
-    parent_invoice_number: form.parent_invoice || "—",
+    deal_start: formatDateValue(form.checkin_at || form.checkin_at_date || form.check_in_date),
+    deal_end: formatDateValue(form.checkout_at || form.checkout_at_date || form.check_out_date),
+    guest_count: String(form.guest_count || form.guestCount || "1"),
+    parent_invoice_number: String(form.parent_invoice || form.parent_invoice_number || "—"),
+    cottage_name: cottageName,
+    property_name: propertyName,
 
     // Client Info (Flat)
     client_name: client.name || "",
@@ -124,23 +137,23 @@ export const prepareTemplateVariables = (form: Record<string, unknown>, clients:
       registration_address: client.registration_address || "",
     },
     contract: {
-      number: form.contract_number || "",
+      number: form.contract_number || form.contractNumber || "",
       date: format(new Date(), "dd MMMM yyyy", { locale: ru }),
-      checkin: form.checkin_at_date && typeof form.checkin_at_date === "string" ? format(new Date(form.checkin_at_date), "dd.MM.yyyy") : "",
-      checkin_time: form.checkin_at_time || "14:00",
-      checkout: form.checkout_at_date && typeof form.checkout_at_date === "string" ? format(new Date(form.checkout_at_date), "dd.MM.yyyy") : "",
-      checkout_time: form.checkout_at_time || "12:00",
-      days: form.guest_count || 1,
+      checkin: formatDateValue(form.checkin_at || form.checkin_at_date || form.check_in_date),
+      checkin_time: form.checkin_at_time || (form.checkInHour !== undefined ? `${form.checkInHour}:00` : "14:00"),
+      checkout: formatDateValue(form.checkout_at || form.checkout_at_date || form.check_out_date),
+      checkout_time: form.checkout_at_time || (form.checkOutHour !== undefined ? `${form.checkOutHour}:00` : "12:00"),
+      days: form.guest_count || form.guestCount || 1,
       rent_price: form.rent_price || "0",
-      prepayment: form.prepayment || "0",
+      prepayment: form.prepayment || form.prepayment_amount || "0",
       total_due: (grossAmount - prepayment).toString(),
     },
     property: {
-      name: form.property === "chunga_changa" ? "Чунга-Чанга" : form.property === "gb_banya" ? "ГБ Баня" : "Голубая Бухта"
+      name: propertyName || (form.property === "chunga_changa" ? "Чунга-Чанга" : form.property === "gb_banya" ? "ГБ Баня" : "Голубая Бухта")
     },
     cottage: {
-      name: form.cottage_id || "Не указан",
-      capacity: form.guest_count || "0"
+      name: cottageName,
+      capacity: String(form.guest_count || form.guestCount || "0")
     },
     services: {
       sauna_included: form.sauna_included,
@@ -155,7 +168,7 @@ export const prepareTemplateVariables = (form: Record<string, unknown>, clients:
 
 export const generatePdfFromHtml = async (templateId: string, formContext: Record<string, unknown>, clients: Record<string, unknown>[]) => {
     try {
-        const res = await fetch(`${API_URL}/templates/${templateId}`);
+        const res = await apiFetch(`/templates/${templateId}`);
         const data = await res.json();
         
         if (!data.success || !data.data) {
@@ -238,7 +251,9 @@ export const generatePdfFromHtml = async (templateId: string, formContext: Recor
 
         const blob = new Blob([fullDocument], { type: "text/html" });
         const url = URL.createObjectURL(blob);
-        window.open(url, "_blank");
+        const win = window.open(url, "_blank", "noopener,noreferrer");
+        if (!win) throw new Error("Не удалось открыть окно печати");
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
 
         return true;
     } catch (e) {

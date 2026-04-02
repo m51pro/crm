@@ -181,18 +181,18 @@ async function syncBookingsWithContract(db, contractId, data) {
 
   // Основной коттедж
   if (data.cottage_included !== false && data.cottage_id) {
-    const prop = data.property === "chunga_changa" ? "chunga" : "gb_cottages";
-    targets.push({ 
-      cottage_id: data.cottage_id, 
-      property: prop, 
-      checkin: data.checkin_at, 
-      checkout: data.checkout_at, 
-      guests: data.guest_count 
+    const prop = normalizeProperty(data.property) === "chunga_changa" ? "chunga_changa" : "golubaya_bukhta";
+    targets.push({
+      cottage_id: data.cottage_id,
+      property: prop,
+      checkin: data.checkin_at,
+      checkout: data.checkout_at,
+      guests: data.guest_count
     });
   }
 
   // Доп. услуги для Голубой Бухты
-  if (data.property === "golubaya_bukhta") {
+  if (normalizeProperty(data.property) === "golubaya_bukhta") {
     if (data.sauna_included) {
       const s_in = data.sauna_date && data.sauna_time_from ? `${data.sauna_date}T${data.sauna_time_from}:00` : null;
       const s_out = data.sauna_date && data.sauna_time_to ? `${data.sauna_date}T${data.sauna_time_to}:00` : null;
@@ -485,8 +485,8 @@ app.post("/api/settings", async (req, res) => {
 app.get("/api/contracts/overdue", async (req, res) => {
   try {
     const overdue = await db.all(`
-      SELECT * FROM contracts 
-      WHERE status = 'signed' 
+      SELECT * FROM contracts
+      WHERE status IN ('signed', 'contract_signed', 'not_paid', 'partial_paid')
       AND (julianday('now') - julianday(created_at)) > 1
       AND (next_reminder_at IS NULL OR datetime(next_reminder_at) <= datetime('now'))
       ORDER BY created_at ASC
@@ -498,31 +498,54 @@ app.get("/api/contracts/overdue", async (req, res) => {
 });
 
 // 3. Шахматка (Бронирования)
+const normalizeProperty = (property) => {
+  if (property === "chunga_changa" || property === "chunga") return "chunga_changa";
+  if (property === "golubaya_bukhta" || property === "gb_cottages") return "golubaya_bukhta";
+  if (property === "gb_banya") return "gb_banya";
+  return property;
+};
+
+const normalizeBookingStatus = (status) => {
+  if (status === "signed") return "contract_signed";
+  if (status === "contract_paid") return "contract_paid";
+  if (status === "contract_signed") return "contract_signed";
+  return status;
+};
+
 app.get("/api/bookings", async (req, res) => {
   try {
-    const { property, date } = req.query;
+    const { property } = req.query;
     let query = "SELECT * FROM bookings WHERE 1=1";
     const params = [];
 
     if (property) {
       query += " AND property = ?";
-      params.push(property);
+      params.push(normalizeProperty(property));
     }
 
     const bookings = await db.all(query, params);
-    
-    // Map database snake_case columns to frontend camelCase expectations
+
     const mappedBookings = bookings.map(b => ({
       ...b,
+      cottage_id: b.cottage_id,
       cottageId: b.cottage_id,
+      client_name: b.client_name,
       clientName: b.client_name,
+      client_phone: b.client_phone,
       phone: b.client_phone,
+      checkin_at: b.checkin_at,
+      checkout_at: b.checkout_at,
       checkInDate: b.checkin_at,
       checkOutDate: b.checkout_at,
+      check_in_hour: b.check_in_hour,
+      check_out_hour: b.check_out_hour,
       checkInHour: b.check_in_hour,
       checkOutHour: b.check_out_hour,
+      guest_count: b.guest_count,
       guestCount: b.guest_count,
-      isDaily: b.property === 'gb_cottages'
+      property: normalizeProperty(b.property),
+      status: normalizeBookingStatus(b.status),
+      isDaily: normalizeProperty(b.property) === 'golubaya_bukhta'
     }));
 
     res.json(mappedBookings);
@@ -535,15 +558,16 @@ app.post("/api/bookings", async (req, res) => {
   try {
     const data = req.body;
     const id = data.id || randomUUID();
-    
+    const property = normalizeProperty(data.property);
+
     await db.run(
       `INSERT INTO bookings (
-        id, cottage_id, property, client_name, client_phone, 
+        id, cottage_id, property, client_name, client_phone,
         checkin_at, checkout_at, check_in_hour, check_out_hour, guest_count, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        id, data.cottage_id, data.property, data.client_name, data.client_phone,
-        data.checkin_at, data.checkout_at, data.check_in_hour, data.check_out_hour, data.guest_count || 1, data.status
+        id, data.cottage_id, property, data.client_name, data.client_phone,
+        data.checkin_at, data.checkout_at, data.check_in_hour, data.check_out_hour, data.guest_count || 1, normalizeBookingStatus(data.status)
       ]
     );
 
@@ -560,13 +584,13 @@ app.put("/api/bookings/:id", async (req, res) => {
     const data = req.body;
     
     const cottageId = data.cottageId || data.cottage_id;
-    let property = data.property;
+    let property = normalizeProperty(data.property);
 
     // Автоматический пересчет property при смене cottage_id
     if (cottageId) {
-      if (cottageId.startsWith("cc")) property = "chunga";
+      if (cottageId.startsWith("cc")) property = "chunga_changa";
       else if (cottageId.startsWith("gb-banya") || cottageId.startsWith("gb-furako")) property = "gb_banya";
-      else if (cottageId.startsWith("gb")) property = "gb_cottages";
+      else if (cottageId.startsWith("gb")) property = "golubaya_bukhta";
     }
 
     await db.run(
@@ -576,10 +600,10 @@ app.put("/api/bookings/:id", async (req, res) => {
         cottage_id = ?, property = ?
       WHERE id = ?`,
       [
-        data.client_name, 
-        data.phone || data.client_phone, 
-        data.guest_count || data.guestCount, 
-        data.status,
+        data.client_name,
+        data.phone || data.client_phone,
+        data.guest_count || data.guestCount,
+        normalizeBookingStatus(data.status),
         data.checkin_at || data.checkInDate,
         data.checkout_at || data.checkOutDate,
         data.check_in_hour !== undefined ? data.check_in_hour : data.checkInHour,

@@ -12,6 +12,7 @@ import { type Booking, formatHour } from "@/lib/chess-data";
 import { toast } from "sonner";
 import { User, Phone, FileText, Users, Calendar, Trash2, Save, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/api";
 import { DateInput } from "@/components/ui/DateInput";
 import {
   Select,
@@ -35,7 +36,17 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
 
   useEffect(() => {
     if (booking) {
-      setEditData(booking);
+      setEditData({
+        ...booking,
+        cottageId: booking.cottageId || booking.cottage_id,
+        clientName: booking.clientName || booking.client_name,
+        phone: booking.phone || booking.client_phone,
+        guestCount: booking.guestCount ?? booking.guest_count,
+        checkInDate: booking.checkInDate || booking.checkin_at,
+        checkOutDate: booking.checkOutDate || booking.checkout_at,
+        checkInHour: booking.checkInHour ?? booking.check_in_hour,
+        checkOutHour: booking.checkOutHour ?? booking.check_out_hour,
+      });
       setIsEditing(false);
     }
   }, [booking]);
@@ -44,10 +55,29 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
 
   const handleSave = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/bookings/${booking.id}`, {
+      const payload = {
+        ...editData,
+        cottage_id: editData.cottageId ?? editData.cottage_id,
+        cottageId: undefined,
+        client_name: editData.clientName ?? editData.client_name,
+        clientName: undefined,
+        client_phone: editData.phone ?? editData.client_phone,
+        phone: undefined,
+        guest_count: editData.guestCount ?? editData.guest_count,
+        guestCount: undefined,
+        checkin_at: editData.checkin_at ?? editData.checkInDate,
+        checkout_at: editData.checkout_at ?? editData.checkOutDate,
+        checkInDate: undefined,
+        checkOutDate: undefined,
+        check_in_hour: editData.check_in_hour ?? editData.checkInHour,
+        check_out_hour: editData.check_out_hour ?? editData.checkOutHour,
+        checkInHour: undefined,
+        checkOutHour: undefined,
+      };
+      const res = await apiFetch(`/bookings/${booking.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editData),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error();
       toast.success("Изменения сохранены");
@@ -62,7 +92,7 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
   const handleDelete = async () => {
     if (!confirm("Вы уверены, что хотите удалить это бронирование?")) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/bookings/${booking.id}`, {
+      const res = await apiFetch(`/bookings/${booking.id}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error();
@@ -76,26 +106,29 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
 
   return (
     <Dialog open={!!booking} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg rounded-[32px] p-0 border-none bg-card shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <DialogHeader className="px-8 pt-8 pb-4 bg-muted/30">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="font-heading text-2xl font-black">
-              {isEditing ? "Редактирование" : "Детали брони"}
-            </DialogTitle>
+      <DialogContent className="sm:max-w-2xl rounded-[28px] p-0 border border-border/60 bg-card shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <DialogHeader className="px-7 pt-7 pb-5 bg-background/90 border-b border-border/60">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <DialogTitle className="font-heading text-2xl font-bold leading-tight">
+                {isEditing ? "Редактирование брони" : "Детали брони"}
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground mt-1">Проверьте данные, затем сохраните изменения</p>
+            </div>
             {!isEditing && (
               <div className={cn(
-                "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                booking.status === 'contract_paid' ? "bg-emerald-500/10 text-emerald-500" :
-                booking.status === 'contract_signed' ? "bg-amber-500/10 text-amber-500" : "bg-sky-500/10 text-sky-500"
+                "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shrink-0 border",
+                booking.status === 'contract_paid' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                booking.status === 'contract_signed' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-sky-500/10 text-sky-400 border-sky-500/20"
               )}>
                 {booking.status === 'contract_paid' ? "Оплачено" :
-                 booking.status === 'contract_signed' ? "Договор" : "Предбронь"}
+                 booking.status === 'contract_signed' ? "Подтверждено" : "Предбронь"}
               </div>
             )}
           </div>
         </DialogHeader>
 
-        <div className="p-8 space-y-8">
+        <div className="p-7 space-y-7">
           {/* Main Grid: 2 columns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
             {/* Left Column: Client & Object */}
@@ -105,9 +138,9 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
                   <Home className="h-3 w-3" /> Объект/Дом
                 </Label>
                 {isEditing ? (
-                  <Select 
-                    value={editData.cottageId} 
-                    onValueChange={(val) => setEditData({...editData, cottageId: val})}
+                  <Select
+                    value={editData.cottageId || editData.cottage_id || ""}
+                    onValueChange={(val) => setEditData({...editData, cottageId: val, cottage_id: val})}
                   >
                     <SelectTrigger className="rounded-xl font-bold h-12 bg-background border-border">
                       <SelectValue placeholder="Выберите дом" />
@@ -133,8 +166,8 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
                 </Label>
                 {isEditing ? (
                   <Input 
-                    value={editData.clientName} 
-                    onChange={e => setEditData({...editData, clientName: e.target.value})}
+                    value={editData.clientName || editData.client_name || ""}
+                    onChange={e => setEditData({...editData, clientName: e.target.value, client_name: e.target.value})}
                     onKeyDown={(e) => e.key === "Enter" && handleSave()}
                     className="rounded-xl font-bold h-12"
                   />
@@ -149,8 +182,8 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
                 </Label>
                 {isEditing ? (
                   <Input 
-                    value={editData.phone} 
-                    onChange={e => setEditData({...editData, phone: e.target.value})}
+                    value={editData.phone || editData.client_phone || ""}
+                    onChange={e => setEditData({...editData, phone: e.target.value, client_phone: e.target.value})}
                     onKeyDown={(e) => e.key === "Enter" && handleSave()}
                     className="rounded-xl font-mono font-bold h-12"
                   />
@@ -173,13 +206,13 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
                         <Label className="text-[10px] text-muted-foreground uppercase font-black">Даты проживания</Label>
                         <div className="grid grid-cols-2 gap-2">
                           <DateInput 
-                            value={editData.checkin_at || editData.checkInDate || ""} 
-                            onChange={v => setEditData({...editData, checkin_at: v})}
+                            value={editData.checkin_at || editData.checkInDate || ""}
+                            onChange={v => setEditData({...editData, checkin_at: v, checkInDate: v})}
                             className="h-10"
                           />
                           <DateInput 
-                            value={editData.checkout_at || editData.checkOutDate || ""} 
-                            onChange={v => setEditData({...editData, checkout_at: v})}
+                            value={editData.checkout_at || editData.checkOutDate || ""}
+                            onChange={v => setEditData({...editData, checkout_at: v, checkOutDate: v})}
                             className="h-10"
                           />
                         </div>

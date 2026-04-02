@@ -32,7 +32,7 @@ export interface Contract {
   client_id?: string;
   client_name?: string;
   client_phone?: string;
-  property?: "chunga_changa" | "golubaya_bukhta";
+  property?: "chunga_changa" | "golubaya_bukhta" | "chunga" | "gb_cottages" | "gb_banya";
   cottage_id?: string;
   bath_included?: boolean;
   bath_date?: string;
@@ -75,6 +75,40 @@ export interface Contract {
   hot_tub_price?: string | number;
   hot_tub_guests?: string | number;
   created_at?: string;
+}
+
+export type BookingStatus =
+  | "pre_booking"
+  | "contract_signed"
+  | "contract_paid"
+  | "not_paid"
+  | "partial_paid"
+  | "paid"
+  | "cancelled";
+
+export interface Booking {
+  id: string;
+  contract_id?: string;
+  cottage_id?: string;
+  cottageId?: string;
+  property: string;
+  client_name?: string;
+  clientName?: string;
+  client_phone?: string;
+  phone?: string;
+  checkin_at?: string;
+  checkout_at?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
+  check_in_hour?: number | null;
+  check_out_hour?: number | null;
+  checkInHour?: number | null;
+  checkOutHour?: number | null;
+  guest_count?: number;
+  guestCount?: number;
+  status?: BookingStatus | string;
+  created_at?: string;
+  isDaily?: boolean;
 }
 
 export interface Template {

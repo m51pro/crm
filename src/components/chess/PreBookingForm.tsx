@@ -14,6 +14,7 @@ import { formatHour } from "@/lib/chess-data";
 import { Plus, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { DateInput } from "@/components/ui/DateInput";
+import { apiFetch } from "@/lib/api";
 
 interface PreBookingFormProps {
   open: boolean;
@@ -60,11 +61,11 @@ export function PreBookingForm({ open, cottageId, hour, isDaily, onClose, onRefr
     }
 
     try {
-      const property = isDaily ? "gb_cottages" : (cottageId?.startsWith("cc") ? "chunga" : "gb_banya");
+      const property = isDaily ? "golubaya_bukhta" : (cottageId?.startsWith("cc") ? "chunga_changa" : "gb_banya");
       
       const defaultDate = date ? format(date, "yyyy-MM-dd") : new Date().toISOString().split("T")[0];
 
-      const res = await fetch("http://localhost:3000/api/bookings", {
+      const res = await apiFetch("/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

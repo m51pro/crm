@@ -188,6 +188,7 @@ Handlebars.registerHelper('incline', function(fio, targetCase) {
 });
 
 const VARIABLE_GROUPS = [
+  { id: "blocks", label: "ГОТОВЫЕ БЛОКИ", icon: <Sparkles className="h-4 w-4 text-cyan-400" />, variables: [] as { id: string; label: string }[] },
   {
     id: "client",
     label: "КОНТРАГЕНТ",
@@ -270,7 +271,10 @@ const VARIABLE_GROUPS = [
     label: "ПОДПИСИ СТОРОН",
     icon: <Sparkles className="h-4 w-4 text-rose-500" />,
     variables: [
+      { id: 'two_column_block', label: 'Блок 2 колонки' },
       { id: 'signatures_table', label: 'Блок подписей (2 колонки)' },
+      { id: 'requisites_block', label: 'Реквизиты' },
+      { id: 'page_break', label: 'Разрыв страницы' },
       { id: 'my_sign_stamp', label: 'Место для печати' },
       { id: 'my_stamp', label: 'Ваша печать (картинка)' },
       { id: 'my_signature', label: 'Ваша подпись (картинка)' },
@@ -388,32 +392,62 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
   }, [content, pageSettings.stampBase64, pageSettings.signatureBase64]);
 
   const insertVariable = (id: string, label: string) => {
-    if (editorInstance) {
-      if (id === 'signatures_table') {
-        editorInstance.commands.insertContent(`
-          <table style="width: 100%; border: none !important;">
-            <tbody>
-              <tr>
-                <td style="width: 50%; border: none !important; padding: 10px 0;">
-                  <strong>АРЕНДОДАТЕЛЬ:</strong><br><br>
-                  {{my_signature}} {{my_stamp}}<br>
-                  ________________ / {{my_signatory_role}} /
-                </td>
-                <td style="width: 50%; border: none !important; padding: 10px 0;">
-                  <strong>АРЕНДАТОР:</strong><br><br>
-                  ________________ / {{client_name}} /
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        `);
-      } else if (id === 'my_sign_stamp') {
-        editorInstance.commands.insertContent('<p style="text-align: right;">М.П. ________________</p>');
-      } else {
-        editorInstance.commands.chessInsertVariable({ id, label });
-      }
-      editorInstance.commands.focus();
+    if (!editorInstance) return;
+    if (id === 'signatures_table') {
+      editorInstance.commands.chessInsertBlock({ html: `
+        <table style="width: 100%; border-collapse: collapse;">
+          <tbody>
+            <tr>
+              <td style="width: 50%; border: none; padding: 12px 8px; vertical-align: top;">
+                <p><strong>ИСПОЛНИТЕЛЬ</strong></p>
+                <p>{{my_name}}</p>
+                <p>________________ / {{my_signatory_role}} /</p>
+                <p>{{my_signature}} {{my_stamp}}</p>
+              </td>
+              <td style="width: 50%; border: none; padding: 12px 8px; vertical-align: top;">
+                <p><strong>ЗАКАЗЧИК</strong></p>
+                <p>{{client_name}}</p>
+                <p>________________ / {{client_name}} /</p>
+                <p>{{doc_date}}</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      `});
+    } else if (id === 'requisites_block') {
+      editorInstance.commands.chessInsertBlock({ html: `
+        <table style="width: 100%; border-collapse: collapse;">
+          <tbody>
+            <tr>
+              <td style="width: 50%; border: 1px solid #000; padding: 8px; vertical-align: top;">
+                <strong>Исполнитель</strong><br>{{my_name}}<br>{{my_inn}} / {{my_kpp}}<br>{{my_address}}
+              </td>
+              <td style="width: 50%; border: 1px solid #000; padding: 8px; vertical-align: top;">
+                <strong>Заказчик</strong><br>{{client_name}}<br>{{client_inn}}<br>{{client_address}}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      `});
+    } else if (id === 'two_column_block') {
+      editorInstance.commands.chessInsertBlock({ html: `
+        <table style="width: 100%; border-collapse: collapse;">
+          <tbody>
+            <tr>
+              <td style="width: 50%; border: none; padding: 0 8px 0 0; vertical-align: top;">Левая колонка</td>
+              <td style="width: 50%; border: none; padding: 0 0 0 8px; vertical-align: top;">Правая колонка</td>
+            </tr>
+          </tbody>
+        </table>
+      `});
+    } else if (id === 'page_break') {
+      editorInstance.commands.chessInsertBlock({ html: '<div style="page-break-after: always;"></div>' });
+    } else if (id === 'my_sign_stamp') {
+      editorInstance.commands.chessInsertBlock({ html: '<p style="text-align: right;">М.П. ________________</p>' });
+    } else {
+      editorInstance.commands.chessInsertVariable({ id, label });
     }
+    editorInstance.commands.focus();
   };
 
   const handleStampUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -437,9 +471,9 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
   if (isLoading) return <div className="flex-1 flex items-center justify-center">Загрузка...</div>;
 
   return (
-    <div className="flex flex-col h-full bg-background relative overflow-hidden">
+    <div className="flex flex-col h-full bg-background text-foreground relative overflow-hidden">
       {/* HEADER */}
-      <header className="flex-none h-16 border-b border-border/40 bg-card/10 flex items-center justify-between px-4 z-10 backdrop-blur-md">
+      <header className="flex-none h-16 border-b border-border/60 bg-background/90 flex items-center justify-between px-4 z-10 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={onBack} className="h-9 w-9 rounded-lg hover:bg-muted transition-all">
             <ChevronLeft className="h-5 w-5" />
@@ -645,7 +679,7 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
             </div>
 
             <ScrollArea className="flex-1 px-4 py-6">
-              <Accordion type="multiple" defaultValue={["client"]} className="space-y-3 pb-24">
+              <Accordion type="multiple" defaultValue={["client", "blocks"]} className="space-y-3 pb-24">
                 {VARIABLE_GROUPS.map((group) => {
                   const filtered = group.variables.filter(v => 
                     v.label.toLowerCase().includes(searchQuery.toLowerCase()) || 

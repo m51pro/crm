@@ -9,6 +9,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import ClientDrawer from "../clients/ClientDrawer";
 import { generatePdfFromHtml } from "@/lib/documentGenerator";
 
@@ -44,7 +45,8 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
   } = useContractForm({ open, contract, onSaved, onClose });
 
   const handleGenerateDocument = async (templateId: string) => {
-    generatePdfFromHtml(templateId, form, clients);
+    const ok = await generatePdfFromHtml(templateId, form, clients);
+    if (!ok) toast.error("Не удалось сформировать документ");
   };
 
   const getStatusBadge = () => {
@@ -60,8 +62,8 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="max-w-[780px] max-h-[95vh] p-0 flex flex-col gap-0 overflow-hidden bg-background border-none shadow-2xl rounded-xl">
-          <DialogHeader className="px-8 pt-7 pb-5 border-b bg-muted/30 shrink-0">
+        <DialogContent className="max-w-[860px] max-h-[95vh] p-0 flex flex-col gap-0 overflow-hidden bg-card border border-border/60 shadow-2xl rounded-2xl">
+          <DialogHeader className="px-8 pt-7 pb-5 border-b border-border/60 bg-background/90 shrink-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="font-heading text-2xl font-bold flex items-center">
                 {isEditing ? "Договор" : "Новый договор"}
@@ -69,7 +71,7 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
               </DialogTitle>
             </div>
             {!isEditing && (
-              <div className="flex mt-3 bg-muted rounded-lg p-1 gap-1">
+              <div className="flex mt-3 bg-muted/70 rounded-xl p-1 gap-1 border border-border/50">
                 <button
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all",
@@ -140,7 +142,7 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
             </div>
           </div>
 
-          <DialogFooter className="border-t p-4 flex-row items-center justify-between w-full">
+          <DialogFooter className="border-t border-border/60 p-4 flex-row items-center justify-between w-full bg-background/90 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

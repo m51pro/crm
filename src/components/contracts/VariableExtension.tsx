@@ -10,6 +10,7 @@ declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     chessVariable: {
       chessInsertVariable: (options: { id: string; label: string }) => ReturnType
+      chessInsertBlock: (options: { html: string }) => ReturnType
     }
   }
 }
@@ -138,12 +139,12 @@ export const VariableExtension = Node.create<VariableOptions>({
         ({ commands }) => {
           return commands.insertContent({
             type: this.name,
-            attrs: {
-              id,
-              label,
-            },
+            attrs: { id, label },
           })
         },
+      chessInsertBlock:
+        ({ html }) =>
+        ({ commands }) => commands.insertContent(html),
     }
   },
 })

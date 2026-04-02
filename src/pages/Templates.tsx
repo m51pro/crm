@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { TemplateBuilder } from "@/components/contracts/TemplateBuilder";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { apiFetch } from "@/lib/api";
 
 interface TemplateInfo {
   id: string;
@@ -24,7 +25,7 @@ export default function Templates() {
 
   const fetchTemplates = () => {
     setIsLoading(true);
-    fetch("http://localhost:3000/api/templates")
+    apiFetch("/templates")
       .then(res => res.json())
       .then(data => {
         if (data.success) setTemplates(data.data);

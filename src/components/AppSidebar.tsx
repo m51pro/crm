@@ -17,7 +17,7 @@ export function AppTopNav() {
   const location = useLocation();
 
   return (
-    <header className="bg-[hsl(var(--sidebar-bg))] rounded-2xl flex items-center justify-between px-5 h-14 shadow-lg shrink-0 border border-white/5">
+    <header className="bg-[hsl(var(--sidebar-bg))] rounded-2xl flex items-center justify-between px-5 h-14 shadow-[0_10px_30px_rgba(15,23,42,0.18)] shrink-0 border border-white/5 backdrop-blur-sm">
       {/* Logo */}
       <div className="flex items-center gap-5 shrink-0">
         <div>

@@ -14,6 +14,7 @@ import {
 } from "@/lib/chess-data";
 import { toast } from "sonner";
 import { NotifierAlert } from "@/components/contracts/NotifierAlert";
+import { apiFetch } from "@/lib/api";
 
 export default function Chess() {
   const [date, setDate] = useState(new Date());
@@ -23,9 +24,11 @@ export default function Chess() {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:3000/api/bookings");
+      const url = new URL(apiFetch("/bookings").url);
+      url.searchParams.set("date", date.toISOString().slice(0, 10));
+      const res = await fetch(url.toString());
       const data = await res.json();
-      setBookings(data);
+      setBookings(Array.isArray(data) ? data : data.data || []);
     } catch (e) {
       toast.error("Ошибка загрузки бронирований");
     } finally {
@@ -52,8 +55,8 @@ export default function Chess() {
   }, []);
 
   // Split bookings by property for grids
-  const chungaBookings = bookings.filter(b => b.property === 'chunga');
-  const gbCottageBookings = bookings.filter(b => b.property === 'gb_cottages');
+  const chungaBookings = bookings.filter(b => b.property === 'chunga_changa' || b.property === 'chunga');
+  const gbCottageBookings = bookings.filter(b => b.property === 'golubaya_bukhta' || b.property === 'gb_cottages');
   const gbBanyaBookings = bookings.filter(b => b.property === 'gb_banya');
 
   const handleExportPdf = () => {
@@ -61,26 +64,26 @@ export default function Chess() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-background text-foreground">
       <DateNavBar date={date} onDateChange={setDate} onExportPdf={handleExportPdf} />
 
-      <div className="flex-1 overflow-auto flex flex-col pb-6">
+      <div className="flex-1 overflow-auto flex flex-col pb-6 gap-4">
         <div className="px-6 pt-6">
           <NotifierAlert />
         </div>
       
-        <Tabs defaultValue="chunga" className="space-y-4 flex-1 flex flex-col">
-          <div className="flex items-center justify-between px-6 mt-2">
-            <TabsList className="bg-muted rounded-2xl p-1 h-auto">
+        <Tabs defaultValue="chunga" className="space-y-4 flex-1 flex flex-col px-6">
+          <div className="flex items-center justify-between mt-1 gap-4 flex-wrap">
+            <TabsList className="bg-background/80 border border-border/60 rounded-2xl p-1 h-auto shadow-sm">
               <TabsTrigger
                 value="chunga"
-                className="rounded-xl px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-chunga data-[state=active]:text-chunga-foreground data-[state=active]:shadow-md data-[state=active]:shadow-chunga/20 transition-all"
+                className="rounded-xl px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all"
               >
                 🟠 Чунга-Чанга
               </TabsTrigger>
               <TabsTrigger
                 value="golubaya"
-                className="rounded-xl px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-bukhta data-[state=active]:text-bukhta-foreground data-[state=active]:shadow-md data-[state=active]:shadow-bukhta/20 transition-all"
+                className="rounded-xl px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all"
               >
                 🔵 Голубая Бухта
               </TabsTrigger>
@@ -94,7 +97,7 @@ export default function Chess() {
               hours={HOURS_CC}
               bookings={chungaBookings}
               date={date}
-              accentClass="bg-chunga"
+              accentClass="bg-primary"
               onRefresh={fetchBookings}
             />
           </TabsContent>

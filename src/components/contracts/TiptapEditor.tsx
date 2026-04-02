@@ -144,11 +144,7 @@ export function TiptapEditor({
   // Реактивное обновление хранилища переменных при загрузке новых картинок
   React.useEffect(() => {
     if (editor?.storage) {
-      // Указываем точный тип для хранилища через unknown, чтобы порадовать TS
-      const storage = (editor.storage as unknown) as Record<
-        string,
-        Record<string, string | undefined>
-      >;
+      const storage = editor.storage as { variable?: { stampBase64?: string; signatureBase64?: string } };
 
       if (storage.variable) {
         storage.variable.stampBase64 = stampBase64;

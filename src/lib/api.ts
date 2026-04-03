@@ -1,6 +1,16 @@
-const rawApiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const devApiUrl = "/api" ;
+const defaultProdApiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
-export const API_URL = rawApiUrl.replace(/\/$/, "");
+export const getApiUrl = () => {
+  if (import.meta.env.DEV) return devApiUrl;
+  // @ts-expect-error - desktopApp might be injected by Electron preload
+  if (window.desktopApp?.apiUrl) return window.desktopApp.apiUrl;
+  return defaultProdApiUrl;
+};
 
-export const apiFetch = (path: string, init?: RequestInit) =>
-  fetch(`${API_URL}${path.startsWith("/") ? path : `/${path}`}`, init);
+export const API_URL = getApiUrl().replace(/\/$/, "");
+
+export const apiFetch = async (path: string, init?: RequestInit) => {
+  const baseUrl = getApiUrl().replace(/\/$/, "");
+  return fetch(`${baseUrl}${path.startsWith("/") ? path : `/${path}`}`, init);
+};

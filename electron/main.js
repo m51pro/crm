@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -7,19 +7,40 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let serverProcess;
+let serverUrl = null;
 
 function startServer() {
-  const serverEntry = path.join(__dirname, "..", "server", "index.js");
-  const dbPath = path.join(app.getPath("userData"), "crm.db");
+  return new Promise((resolve) => {
+    const serverEntry = path.join(__dirname, "..", "server", "index.js");
+    const dbPath = path.join(app.getPath("userData"), "crm.db");
 
-  serverProcess = spawn(process.execPath, [serverEntry], {
-    env: {
-      ...process.env,
-      CRM_DB_PATH: dbPath,
-    },
-    stdio: "inherit",
+    serverProcess = spawn(process.execPath, [serverEntry], {
+      env: {
+        ...process.env,
+        CRM_DB_PATH: dbPath,
+        ELECTRON_RUN_AS_NODE: "1",
+      },
+      stdio: ["inherit", "pipe", "inherit"],
+    });
+
+    serverProcess.stdout.on("data", (data) => {
+      const output = data.toString();
+      console.log(`[Server]: ${output}`);
+      const match = output.match(/SERVER_PORT=(\d+)/);
+      if (match) {
+        serverUrl = `http://localhost:${match[1]}/api`;
+        console.log(`✅ Backend URL detected: ${serverUrl}`);
+        resolve(serverUrl);
+      }
+    });
+
+    serverProcess.on("error", (err) => {
+      console.error("Failed to start server process:", err);
+    });
   });
 }
+
+ipcMain.handle("get-server-url", () => serverUrl);
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -29,6 +50,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      additionalArguments: [`--api-url=${serverUrl}`],
     },
   });
 
@@ -40,8 +62,8 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(() => {
-  startServer();
+app.whenReady().then(async () => {
+  await startServer();
   createWindow();
 
   app.on("activate", () => {

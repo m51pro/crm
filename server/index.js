@@ -22,6 +22,8 @@ async function initDb() {
     driver: sqlite3.Database,
   });
 
+  await db.exec("PRAGMA foreign_keys = ON;");
+
   await db.exec(`
     CREATE TABLE IF NOT EXISTS clients (
       id TEXT PRIMARY KEY,
@@ -155,9 +157,14 @@ async function initDb() {
 // Помощник для синхронизации броней с договором (Неразрушающее обновление)
 function parseHours(checkin, checkout) {
   const getHour = (value) => {
-    if (!value) return null;
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed.getHours();
+    if (!value || typeof value !== "string") return null;
+    const tIndex = value.indexOf("T");
+    if (tIndex !== -1) {
+      const hourPart = value.substring(tIndex + 1, tIndex + 3);
+      const h = parseInt(hourPart, 10);
+      return isNaN(h) ? null : h;
+    }
+    return null;
   };
 
   return {
@@ -381,13 +388,17 @@ app.post("/api/contracts", async (req, res) => {
     const data = req.body;
     const id = data.id || randomUUID();
     
-    // Генерируем номер договора, если не передан
+    // Генерируем номер договора из настроек, если не передан
     let contract_number = data.contract_number;
     if (!contract_number) {
-      const year = new Date().getFullYear();
-      const row = await db.get("SELECT COUNT(*) as count FROM contracts");
-      const nextNum = String(row.count + 1).padStart(3, '0');
-      contract_number = `${year}-${nextNum}`;
+      const prefixRow = await db.get("SELECT value FROM settings WHERE key = 'contract_prefix'");
+      const startNumRow = await db.get("SELECT value FROM settings WHERE key = 'contract_start_num'");
+      const prefix = prefixRow ? prefixRow.value : "ДГ";
+      const nextNum = startNumRow ? parseInt(startNumRow.value) : 1;
+      contract_number = `${prefix}${nextNum}`;
+      
+      // Инкрементируем счетчик в настройках
+      await db.run("UPDATE settings SET value = CAST(CAST(value AS INTEGER) + 1 AS TEXT) WHERE key = 'contract_start_num'");
     }
 
     await db.run(
@@ -466,10 +477,7 @@ app.get("/api/contracts/next-number", async (req, res) => {
     const startNumRow = await db.get("SELECT value FROM settings WHERE key = 'contract_start_num'");
     
     const prefix = prefixRow ? prefixRow.value : "ДГ";
-    const startNum = startNumRow ? parseInt(startNumRow.value) : 1;
-    
-    const countRow = await db.get("SELECT COUNT(*) as count FROM contracts");
-    const nextNum = startNum + countRow.count;
+    const nextNum = startNumRow ? startNumRow.value : "1";
     
     res.json({ next_number: `${prefix}${nextNum}` });
   } catch (error) {
@@ -533,7 +541,7 @@ const normalizeBookingStatus = (status) => {
 
 app.get("/api/bookings", async (req, res) => {
   try {
-    const { property } = req.query;
+    const { property, startDate, endDate } = req.query;
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 200));
     const offset = (page - 1) * limit;
@@ -545,7 +553,13 @@ app.get("/api/bookings", async (req, res) => {
       params.push(normalizeProperty(property));
     }
 
-    const countRow = await db.get(`SELECT COUNT(*) as count FROM bookings WHERE 1=1${property ? " AND property = ?" : ""}`, property ? [normalizeProperty(property)] : []);
+    if (startDate && endDate) {
+      query += " AND checkin_at < ? AND checkout_at > ?";
+      params.push(endDate, startDate);
+    }
+
+    const countRow = await db.get(`SELECT COUNT(*) as count FROM bookings WHERE 1=1${property ? " AND property = ?" : ""}${startDate && endDate ? " AND checkin_at < ? AND checkout_at > ?" : ""}`, 
+      [...(property ? [normalizeProperty(property)] : []), ...(startDate && endDate ? [endDate, startDate] : [])]);
     const bookings = await db.all(`${query} ORDER BY created_at DESC LIMIT ? OFFSET ?`, [...params, limit, offset]);
 
     const mappedBookings = bookings.map(b => ({
@@ -735,11 +749,27 @@ app.post("/api/templates", async (req, res) => {
   }
 });
 
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`✅ Сервер запущен на порту ${PORT}`);
-    console.log(`👉 API доступно по адресу http://localhost:${PORT}/api`);
-  });
+  const initialPort = parseInt(process.env.PORT) || 3000;
+
+  function listen(port) {
+    const server = app.listen(port, () => {
+      const actualPort = server.address().port;
+      console.log(`✅ Сервер запущен на порту ${actualPort}`);
+      console.log(`SERVER_PORT=${actualPort}`);
+    });
+
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE" && port !== 0) {
+        console.warn(`⚠️ Порт ${port} занят, пробую случайный...`);
+        listen(0);
+      } else {
+        console.error("❌ Ошибка запуска сервера:", err);
+        process.exit(1);
+      }
+    });
+  }
+
+  listen(initialPort);
 }
 
 startServer().catch((error) => {

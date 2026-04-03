@@ -3,8 +3,7 @@ import { format, differenceInDays, addHours, parse } from "date-fns";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import { CHUNGA_CHANGA_COTTAGES, GB_COTTAGES } from "@/lib/chess-data";
-import { Client, Contract, Template } from "@/types/crm";
-
+import { Client, Contract, ContractFormData, Template } from "@/types/crm";
 interface UseContractFormProps {
   open: boolean;
   contract?: Contract;
@@ -15,7 +14,7 @@ interface UseContractFormProps {
 export function useContractForm({ open, contract, onSaved, onClose }: UseContractFormProps) {
   const isEditing = !!contract?.id;
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ContractFormData>({
     contract_number: "",
     contract_date: format(new Date(), "yyyy-MM-dd"),
     client_id: "",
@@ -153,8 +152,8 @@ export function useContractForm({ open, contract, onSaved, onClose }: UseContrac
     }
   }, [open, contract]);
 
-  const setF = useCallback((k: string, v: string | number | boolean) => setForm(p => {
-    const next = { ...p, [k]: v } as typeof p;
+  const setF = useCallback((k: keyof ContractFormData, v: string | number | boolean) => setForm(p => {
+    const next = { ...p, [k]: v } as ContractFormData;
     
     if (k === "property" && v === "golubaya_bukhta") {
       next.checkin_at_time = "17:00";

@@ -69,6 +69,15 @@ export interface Contract {
   created_at?: string;
 }
 
+export interface ContractFormData extends Contract {
+  is_prebooking?: boolean;
+  is_full_day?: boolean;
+  checkin_at_date?: string;
+  checkin_at_time?: string;
+  checkout_at_date?: string;
+  checkout_at_time?: string;
+}
+
 export type BookingStatus =
   | "pre_booking"
   | "contract_signed"

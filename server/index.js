@@ -13,7 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const DB_PATH = path.join(__dirname, "crm.db");
+const DB_PATH = process.env.CRM_DB_PATH || path.join(__dirname, "crm.db");
 
 // Инициализация базы данных и таблиц
 async function initDb() {
@@ -252,12 +252,12 @@ async function syncBookingsWithContract(db, contractId, data) {
 }
 
 let db;
-initDb().then((database) => {
-  db = database;
-  console.log("Локальная SQLite база инициализирована:", DB_PATH);
-});
 
-// --- API Роуты ---
+async function startServer() {
+  db = await initDb();
+  console.log("Локальная SQLite база инициализирована:", DB_PATH);
+
+  // --- API Роуты ---
 
 app.get("/api", (req, res) => {
   res.json({ message: "CRM API is running", status: "ok" });
@@ -735,8 +735,14 @@ app.post("/api/templates", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Сервер запущен на порту ${PORT}`);
-  console.log(`👉 API доступно по адресу http://localhost:${PORT}/api`);
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`✅ Сервер запущен на порту ${PORT}`);
+    console.log(`👉 API доступно по адресу http://localhost:${PORT}/api`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error("Не удалось запустить сервер:", error);
+  process.exit(1);
 });

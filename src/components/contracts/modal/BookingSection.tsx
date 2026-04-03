@@ -8,10 +8,10 @@ import { DateInput } from "@/components/ui/DateInput";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "./SectionHeader";
 import { CHUNGA_CHANGA_COTTAGES, GB_COTTAGES } from "@/lib/chess-data";
-import { Contract } from "@/types/crm";
+import { ContractFormData } from "@/types/crm";
 
 interface BookingSectionProps {
-  form: Contract;
+  form: ContractFormData;
   setF: (k: string, v: string | number | boolean) => void;
   daysCalc: number;
 }

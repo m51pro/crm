@@ -63,7 +63,7 @@ export function PreBookingForm({ open, cottageId, hour, isDaily, onClose, onRefr
     try {
       const property = isDaily ? "golubaya_bukhta" : (cottageId?.startsWith("cc") ? "chunga_changa" : "gb_banya");
       
-      const defaultDate = date ? format(date, "yyyy-MM-dd") : new Date().toISOString().split("T")[0];
+      const defaultDate = date ? format(date, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
 
       const res = await apiFetch("/bookings", {
         method: "POST",

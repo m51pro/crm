@@ -239,7 +239,7 @@ export function useContractForm({ open, contract, onSaved, onClose }: UseContrac
   const handleSave = async (closeAfter = true) => {
     if (!form.client_name || !form.cottage_id) {
       toast.error("Заполните арендатора и коттедж");
-      return;
+      return false;
     }
     setSaving(true);
     try {
@@ -270,9 +270,11 @@ export function useContractForm({ open, contract, onSaved, onClose }: UseContrac
       }
       onSaved();
       if (closeAfter) onClose();
+      return true;
     } catch (e: unknown) {
       const error = e as Error;
       toast.error(error.message || "Ошибка при сохранении");
+      return false;
     } finally {
       setSaving(false);
     }

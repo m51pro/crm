@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -10,7 +10,7 @@ let serverProcess;
 let serverUrl = null;
 
 function startServer() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const serverEntry = path.join(__dirname, "..", "server", "index.js");
     const dbPath = path.join(app.getPath("userData"), "crm.db");
 
@@ -36,6 +36,20 @@ function startServer() {
 
     serverProcess.on("error", (err) => {
       console.error("Failed to start server process:", err);
+      dialog.showErrorBox(
+        "Ошибка запуска сервера",
+        `Не удалось запустить порцесс бэкенда: ${err.message}`
+      );
+      reject(err);
+    });
+
+    serverProcess.on("exit", (code) => {
+      if (code !== 0 && !serverUrl) {
+        const msg = `Процесс сервера завершился с кодом ${code}`;
+        console.error(msg);
+        dialog.showErrorBox("Ошибка сервера", msg);
+        reject(new Error(msg));
+      }
     });
   });
 }
@@ -63,8 +77,14 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  await startServer();
-  createWindow();
+  try {
+    await startServer();
+    createWindow();
+  } catch (error) {
+    console.error("Critical error during app startup:", error);
+    // При желании можно завершить приложение при критической ошибке
+    // app.quit();
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

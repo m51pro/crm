@@ -66,6 +66,13 @@ export interface Contract {
   hot_tub_time_to?: string;
   hot_tub_price?: string | number;
   hot_tub_guests?: string | number;
+  bath_included?: boolean;
+  bath_date?: string;
+  bath_time_from?: string;
+  bath_time_to?: string;
+  is_full_day?: boolean;
+  notes?: string;
+  [key: string]: any; // Allow indexing for form mapping
   created_at?: string;
 }
 

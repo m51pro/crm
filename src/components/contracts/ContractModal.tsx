@@ -45,6 +45,10 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
   } = useContractForm({ open, contract, onSaved, onClose });
 
   const handleGenerateDocument = async (templateId: string) => {
+    // Автоматически сохраняем изменения перед генерацией, чтобы PDF соответствовал базе
+    const saved = await handleSave(false);
+    if (!saved) return;
+
     const ok = await generatePdfFromHtml(templateId, form, clients);
     if (!ok) toast.error("Не удалось сформировать документ");
   };

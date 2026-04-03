@@ -385,6 +385,7 @@ app.get("/api/contracts", async (req, res) => {
 
 app.post("/api/contracts", async (req, res) => {
   try {
+    await db.run("BEGIN TRANSACTION");
     const data = req.body;
     const id = data.id || randomUUID();
     
@@ -425,10 +426,12 @@ app.post("/api/contracts", async (req, res) => {
     );
 
     await syncBookingsWithContract(db, id, data);
+    await db.run("COMMIT");
 
     const newContract = await db.get("SELECT * FROM contracts WHERE id = ?", [id]);
     res.json(newContract);
   } catch (error) {
+    await db.run("ROLLBACK");
     console.error(error);
     res.status(500).json({ error: error.message });
   }
@@ -436,6 +439,7 @@ app.post("/api/contracts", async (req, res) => {
 
 app.put("/api/contracts/:id", async (req, res) => {
   try {
+    await db.run("BEGIN TRANSACTION");
     const { id } = req.params;
     const data = req.body;
     
@@ -464,8 +468,10 @@ app.put("/api/contracts/:id", async (req, res) => {
     );
 
     await syncBookingsWithContract(db, id, data);
+    await db.run("COMMIT");
     res.json({ success: true });
   } catch (error) {
+    await db.run("ROLLBACK");
     res.status(500).json({ error: error.message });
   }
 });

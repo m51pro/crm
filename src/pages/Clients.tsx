@@ -21,18 +21,24 @@ export default function Clients() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"view" | "edit">("view");
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 100;
 
-  const fetchClients = async () => {
+  const fetchClients = async (nextPage = page) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/clients`);
+      const res = await fetch(`${API_URL}/clients?page=${nextPage}&limit=${pageSize}`);
       const data = await res.json();
-      setClients(data);
-    } catch(e) { console.error(e); setClients([]); }
+      const total = Number(res.headers.get("X-Total-Count") || data.length || 0);
+      setClients(Array.isArray(data) ? data : data.data || []);
+      setTotalCount(total);
+      setPage(nextPage);
+    } catch(e) { console.error(e); setClients([]); setTotalCount(0); }
     setLoading(false);
   };
 
-  useEffect(() => { fetchClients(); }, []);
+  useEffect(() => { fetchClients(1); }, []);
 
   const filtered = useMemo(() => {
     let list = clients;
@@ -73,6 +79,7 @@ export default function Clients() {
   const openEdit = (c: ClientData) => { setSelectedClient(c); setDrawerMode("edit"); setDrawerOpen(true); };
 
   const blacklistCount = useMemo(() => clients.filter((c) => c.is_blacklisted).length, [clients]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   const filters: { key: FilterType; label: string; isRed?: boolean }[] = [
     { key: "all", label: "Все" },
@@ -174,7 +181,15 @@ export default function Clients() {
         </Card>
       )}
 
-      <ClientDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} client={selectedClient} onSaved={fetchClients} mode={drawerMode} />
+      <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+        <div>Страница {page} из {totalPages}</div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => fetchClients(Math.max(1, page - 1))} disabled={page <= 1 || loading}>Назад</Button>
+          <Button variant="outline" size="sm" onClick={() => fetchClients(Math.min(totalPages, page + 1))} disabled={page >= totalPages || loading}>Вперёд</Button>
+        </div>
+      </div>
+
+      <ClientDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} client={selectedClient} onSaved={() => fetchClients(page)} mode={drawerMode} />
     </div>
   );
 }

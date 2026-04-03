@@ -24,7 +24,7 @@ export default function Chess() {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const res = await apiFetch(`/bookings?date=${date.toISOString().slice(0, 10)}`);
+      const res = await apiFetch(`/bookings?date=${date.toISOString().slice(0, 10)}&limit=500`);
       const data = await res.json();
       setBookings(Array.isArray(data) ? data : data.data || []);
     } catch (e) {

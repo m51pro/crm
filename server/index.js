@@ -111,45 +111,40 @@ async function initDb() {
     INSERT OR IGNORE INTO settings (key, value) VALUES ('contract_start_num', '221');
   `);
   
+  const addMissingColumns = async (table, columns) => {
+    const info = await db.all(`PRAGMA table_info(${table})`);
+    const existing = new Set(info.map((row) => row.name));
+    for (const col of columns) {
+      const columnName = col.split(" ")[0];
+      if (existing.has(columnName)) continue;
+      await db.exec(`ALTER TABLE ${table} ADD COLUMN ${col};`);
+      console.log(`Migration: Added ${columnName} to ${table} table.`);
+    }
+  };
+
   // Safe migration to add new columns to contracts table
   try {
-    const contractCols = [
+    await addMissingColumns("contracts", [
       "next_reminder_at DATETIME",
       "cottage_included INTEGER DEFAULT 1",
       "sauna_included INTEGER DEFAULT 0",
       "hot_tub_included INTEGER DEFAULT 0",
-      "sauna_date TEXT", "sauna_time_from TEXT", "sauna_time_to TEXT", 
+      "sauna_date TEXT", "sauna_time_from TEXT", "sauna_time_to TEXT",
       "sauna_price NUMERIC", "sauna_guests INTEGER",
-      "hot_tub_date TEXT", "hot_tub_time_from TEXT", "hot_tub_time_to TEXT", 
+      "hot_tub_date TEXT", "hot_tub_time_from TEXT", "hot_tub_time_to TEXT",
       "hot_tub_price NUMERIC", "hot_tub_guests INTEGER"
-    ];
-    for (const col of contractCols) {
-      try {
-        await db.exec(`ALTER TABLE contracts ADD COLUMN ${col};`);
-        console.log(`Migration: Added ${col.split(' ')[0]} to contracts table.`);
-      } catch (e) {
-        if (!e.message.includes("duplicate column name")) console.error("Migration warning:", e.message);
-      }
-    }
+    ]);
   } catch (e) {
     console.error("Migration error contracts:", e.message);
   }
 
   // Safe migration to add new columns to clients table
   try {
-    const newColumns = [
+    await addMissingColumns("clients", [
       "birth_date TEXT", "passport_issued_date TEXT", "passport_issued_by TEXT", "registration_address TEXT",
-      "kpp TEXT", "ogrn TEXT", "legal_address TEXT", "contact_person TEXT", 
+      "kpp TEXT", "ogrn TEXT", "legal_address TEXT", "contact_person TEXT",
       "bank_name TEXT", "settlement_account TEXT", "corr_account TEXT", "bik TEXT", "notes TEXT"
-    ];
-    for (const col of newColumns) {
-      try {
-        await db.exec(`ALTER TABLE clients ADD COLUMN ${col};`);
-        console.log(`Migration: Added ${col.split(' ')[0]} to clients table.`);
-      } catch (e) {
-        if (!e.message.includes("duplicate column name")) console.error(e.message);
-      }
-    }
+    ]);
   } catch (e) {
     console.error("Migration error:", e.message);
   }
@@ -158,21 +153,34 @@ async function initDb() {
 }
 
 // Помощник для синхронизации броней с договором (Неразрушающее обновление)
+function parseHours(checkin, checkout) {
+  const getHour = (value) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.getHours();
+  };
+
+  return {
+    inHour: getHour(checkin),
+    outHour: getHour(checkout),
+  };
+}
+
 async function syncBookingsWithContract(db, contractId, data) {
   // 1. Получаем текущие брони для этого договора
   const existingRows = await db.all("SELECT id, cottage_id, property FROM bookings WHERE contract_id = ?", [contractId]);
-  
+
   // Если договор аннулирован, удаляем все брони и выходим
   if (data.status === "cancelled") {
     await db.run("DELETE FROM bookings WHERE contract_id = ?", [contractId]);
     return;
   }
 
-  const statusMap = { 
-    'paid': 'contract_paid', 
-    'partial_paid': 'contract_signed', 
-    'not_paid': 'contract_signed', 
-    'pre_booking': 'pre_booking' 
+  const statusMap = {
+    'paid': 'contract_paid',
+    'partial_paid': 'contract_signed',
+    'not_paid': 'contract_signed',
+    'pre_booking': 'pre_booking'
   };
   const finalStatus = statusMap[data.status] || data.status;
 
@@ -222,12 +230,7 @@ async function syncBookingsWithContract(db, contractId, data) {
   // 2. UPDATE: Обновляем существующие записи (сохраняя ID)
   for (const t of toUpdate) {
     const existing = existingRows.find(ext => ext.cottage_id === t.cottage_id && ext.property === t.property);
-    
-    let inHour = null, outHour = null;
-    try {
-      if (t.checkin && t.checkin.includes('T')) inHour = parseInt(t.checkin.split('T')[1].split(':')[0], 10);
-      if (t.checkout && t.checkout.includes('T')) outHour = parseInt(t.checkout.split('T')[1].split(':')[0], 10);
-    } catch(e) {}
+    const { inHour, outHour } = parseHours(t.checkin, t.checkout);
 
     await db.run(
       `UPDATE bookings SET client_name = ?, client_phone = ?, checkin_at = ?, checkout_at = ?, check_in_hour = ?, check_out_hour = ?, guest_count = ?, status = ?
@@ -238,11 +241,7 @@ async function syncBookingsWithContract(db, contractId, data) {
 
   // 3. INSERT: Добавляем новые брони
   for (const t of toInsert) {
-    let inHour = null, outHour = null;
-    try {
-      if (t.checkin && t.checkin.includes('T')) inHour = parseInt(t.checkin.split('T')[1].split(':')[0], 10);
-      if (t.checkout && t.checkout.includes('T')) outHour = parseInt(t.checkout.split('T')[1].split(':')[0], 10);
-    } catch(e) {}
+    const { inHour, outHour } = parseHours(t.checkin, t.checkout);
 
     await db.run(
       `INSERT INTO bookings (id, contract_id, cottage_id, property, client_name, client_phone, checkin_at, checkout_at, check_in_hour, check_out_hour, guest_count, status)
@@ -267,7 +266,17 @@ app.get("/api", (req, res) => {
 // 1. Клиенты
 app.get("/api/clients", async (req, res) => {
   try {
-    const clients = await db.all("SELECT * FROM clients ORDER BY created_at DESC");
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 100));
+    const offset = (page - 1) * limit;
+
+    const totalRow = await db.get("SELECT COUNT(*) as count FROM clients");
+    const clients = await db.all(
+      "SELECT * FROM clients ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      [limit, offset]
+    );
+
+    res.setHeader("X-Total-Count", String(totalRow?.count ?? 0));
     res.json(clients);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -350,7 +359,17 @@ app.delete("/api/clients/:id", async (req, res) => {
 // 2. Договоры
 app.get("/api/contracts", async (req, res) => {
   try {
-    const contracts = await db.all("SELECT * FROM contracts ORDER BY created_at DESC");
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 100));
+    const offset = (page - 1) * limit;
+
+    const totalRow = await db.get("SELECT COUNT(*) as count FROM contracts");
+    const contracts = await db.all(
+      "SELECT * FROM contracts ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      [limit, offset]
+    );
+
+    res.setHeader("X-Total-Count", String(totalRow?.count ?? 0));
     res.json(contracts);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -515,6 +534,9 @@ const normalizeBookingStatus = (status) => {
 app.get("/api/bookings", async (req, res) => {
   try {
     const { property } = req.query;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 200));
+    const offset = (page - 1) * limit;
     let query = "SELECT * FROM bookings WHERE 1=1";
     const params = [];
 
@@ -523,7 +545,8 @@ app.get("/api/bookings", async (req, res) => {
       params.push(normalizeProperty(property));
     }
 
-    const bookings = await db.all(query, params);
+    const countRow = await db.get(`SELECT COUNT(*) as count FROM bookings WHERE 1=1${property ? " AND property = ?" : ""}`, property ? [normalizeProperty(property)] : []);
+    const bookings = await db.all(`${query} ORDER BY created_at DESC LIMIT ? OFFSET ?`, [...params, limit, offset]);
 
     const mappedBookings = bookings.map(b => ({
       ...b,
@@ -548,6 +571,7 @@ app.get("/api/bookings", async (req, res) => {
       isDaily: normalizeProperty(b.property) === 'golubaya_bukhta'
     }));
 
+    res.setHeader("X-Total-Count", String(countRow?.count ?? 0));
     res.json(mappedBookings);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -679,30 +703,30 @@ app.post("/api/templates", async (req, res) => {
     const { id, title, target_property, client_type, html_content, settings } = req.body;
     const now = new Date().toISOString();
     const templateId = id || randomUUID();
-    
+
     const existing = await db.get("SELECT * FROM templates WHERE id = ?", [templateId]);
-    let versions = existing?.versions_json ? JSON.parse(existing.versions_json) : [];
-    
+    const versions = existing?.versions_json ? JSON.parse(existing.versions_json) : [];
+
     if (existing) {
-       versions.unshift({
-          timestamp: existing.updated_at,
-          title: existing.title,
-          html_content: existing.html_content,
-          settings: existing.settings
-       });
-       versions = versions.slice(0, 10); // Keep max 10 version history
+      versions.unshift({
+        timestamp: existing.updated_at,
+        title: existing.title,
+        html_content: existing.html_content,
+        settings: existing.settings
+      });
     }
-    
+    const trimmedVersions = versions.slice(0, 10);
+
     if (existing) {
-       await db.run(
-         `UPDATE templates SET title = ?, target_property = ?, client_type = ?, html_content = ?, settings = ?, versions_json = ?, updated_at = ? WHERE id = ?`,
-         [title, target_property || 'all', client_type || 'all', html_content, JSON.stringify(settings || {}), JSON.stringify(versions), now, templateId]
-       );
+      await db.run(
+        `UPDATE templates SET title = ?, target_property = ?, client_type = ?, html_content = ?, settings = ?, versions_json = ?, updated_at = ? WHERE id = ?`,
+        [title, target_property || 'all', client_type || 'all', html_content, JSON.stringify(settings || {}), JSON.stringify(trimmedVersions), now, templateId]
+      );
     } else {
-       await db.run(
-         `INSERT INTO templates (id, title, target_property, client_type, html_content, settings, versions_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-         [templateId, title, target_property || 'all', client_type || 'all', html_content, JSON.stringify(settings || {}), JSON.stringify(versions), now, now]
-       );
+      await db.run(
+        `INSERT INTO templates (id, title, target_property, client_type, html_content, settings, versions_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [templateId, title, target_property || 'all', client_type || 'all', html_content, JSON.stringify(settings || {}), JSON.stringify(trimmedVersions), now, now]
+      );
     }
 
     res.json({ success: true, id: templateId });
@@ -711,7 +735,7 @@ app.post("/api/templates", async (req, res) => {
   }
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Сервер запущен на порту ${PORT}`);
   console.log(`👉 API доступно по адресу http://localhost:${PORT}/api`);

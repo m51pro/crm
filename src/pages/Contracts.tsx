@@ -31,6 +31,9 @@ export default function Contracts() {
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 100;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -51,17 +54,20 @@ export default function Contracts() {
     }
   }, [location, navigate]);
 
-  const fetchContracts = async () => {
+  const fetchContracts = async (nextPage = page) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/contracts`);
+      const res = await fetch(`${API_URL}/contracts?page=${nextPage}&limit=${pageSize}`);
       const data = await res.json();
-      setContracts(data);
-    } catch(e) { console.error(e); setContracts([]); }
+      const total = Number(res.headers.get("X-Total-Count") || data.length || 0);
+      setContracts(Array.isArray(data) ? data : data.data || []);
+      setTotalCount(total);
+      setPage(nextPage);
+    } catch(e) { console.error(e); setContracts([]); setTotalCount(0); }
     setLoading(false);
   };
 
-  useEffect(() => { fetchContracts(); }, []);
+  useEffect(() => { fetchContracts(1); }, []);
 
   const getComputedStatus = useCallback((c: Contract): ContractStatus => {
     if (c.status === "cancelled") return "cancelled";
@@ -167,6 +173,7 @@ export default function Contracts() {
     const all = [...CHUNGA_CHANGA_COTTAGES, ...GB_COTTAGES, ...GB_BANYA_ITEMS];
     return all.find(c => c.id === id)?.name || id;
   };
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
     <div className="p-6">
@@ -333,7 +340,15 @@ export default function Contracts() {
         </Card>
       )}
 
-      <ContractModal open={modalOpen} onClose={() => setModalOpen(false)} contract={selectedContract} onSaved={fetchContracts} />
+      <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+        <div>Страница {page} из {totalPages}</div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => fetchContracts(Math.max(1, page - 1))} disabled={page <= 1 || loading}>Назад</Button>
+          <Button variant="outline" size="sm" onClick={() => fetchContracts(Math.min(totalPages, page + 1))} disabled={page >= totalPages || loading}>Вперёд</Button>
+        </div>
+      </div>
+
+      <ContractModal open={modalOpen} onClose={() => setModalOpen(false)} contract={selectedContract} onSaved={() => fetchContracts(page)} />
     </div>
   );
 }

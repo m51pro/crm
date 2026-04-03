@@ -9,6 +9,13 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const COTTAGE_IDS = {
+  SAUNA: "gb-banya",
+  HOT_TUB: "gb-furako",
+  CHUNGA_PREFIX: "cc",
+  GB_PREFIX: "gb"
+};
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -158,10 +165,11 @@ async function initDb() {
 function parseHours(checkin, checkout) {
   const getHour = (value) => {
     if (!value || typeof value !== "string") return null;
-    const tIndex = value.indexOf("T");
-    if (tIndex !== -1) {
-      const hourPart = value.substring(tIndex + 1, tIndex + 3);
-      const h = parseInt(hourPart, 10);
+    
+    // Ищем двузначное число часов сразу после пробела или буквы 'T'
+    const match = value.match(/(?:T|\s)(\d{2}):/);
+    if (match) {
+      const h = parseInt(match[1], 10);
       return isNaN(h) ? null : h;
     }
     return null;
@@ -212,14 +220,14 @@ async function syncBookingsWithContract(db, contractId, data) {
       const s_in = data.sauna_date && data.sauna_time_from ? `${data.sauna_date}T${data.sauna_time_from}:00` : null;
       const s_out = data.sauna_date && data.sauna_time_to ? `${data.sauna_date}T${data.sauna_time_to}:00` : null;
       if (s_in && s_out) {
-        targets.push({ cottage_id: "gb-banya", property: "gb_banya", checkin: s_in, checkout: s_out, guests: data.sauna_guests });
+        targets.push({ cottage_id: COTTAGE_IDS.SAUNA, property: "gb_banya", checkin: s_in, checkout: s_out, guests: data.sauna_guests });
       }
     }
     if (data.hot_tub_included) {
       const h_in = data.hot_tub_date && data.hot_tub_time_from ? `${data.hot_tub_date}T${data.hot_tub_time_from}:00` : null;
       const h_out = data.hot_tub_date && data.hot_tub_time_to ? `${data.hot_tub_date}T${data.hot_tub_time_to}:00` : null;
       if (h_in && h_out) {
-        targets.push({ cottage_id: "gb-furako", property: "gb_banya", checkin: h_in, checkout: h_out, guests: data.hot_tub_guests });
+        targets.push({ cottage_id: COTTAGE_IDS.HOT_TUB, property: "gb_banya", checkin: h_in, checkout: h_out, guests: data.hot_tub_guests });
       }
     }
   }
@@ -632,9 +640,9 @@ app.put("/api/bookings/:id", async (req, res) => {
 
     // Автоматический пересчет property при смене cottage_id
     if (cottageId) {
-      if (cottageId.startsWith("cc")) property = "chunga_changa";
-      else if (cottageId.startsWith("gb-banya") || cottageId.startsWith("gb-furako")) property = "gb_banya";
-      else if (cottageId.startsWith("gb")) property = "golubaya_bukhta";
+      if (cottageId.startsWith(COTTAGE_IDS.CHUNGA_PREFIX)) property = "chunga_changa";
+      else if (cottageId.startsWith(COTTAGE_IDS.SAUNA) || cottageId.startsWith(COTTAGE_IDS.HOT_TUB)) property = "gb_banya";
+      else if (cottageId.startsWith(COTTAGE_IDS.GB_PREFIX)) property = "golubaya_bukhta";
     }
 
     await db.run(

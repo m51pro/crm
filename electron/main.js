@@ -69,7 +69,7 @@ function createWindow() {
   });
 
   const devUrl = process.env.VITE_DEV_SERVER_URL || "http://localhost:8080";
-  if (process.env.NODE_ENV === "development") {
+  if (!app.isPackaged) {
     win.loadURL(devUrl);
   } else {
     win.loadFile(path.join(__dirname, "..", "dist", "index.html"));

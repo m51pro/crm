@@ -204,16 +204,16 @@ export function useContractForm({ open, contract, onSaved, onClose }: UseContrac
   }, [form.checkin_at_date, form.checkout_at_date]);
 
   const totalRentSum = useMemo(() => {
-    let sum = parseFloat(form.rent_price) || 0;
+    let sum = Number(form.rent_price) || 0;
     if (form.property === "golubaya_bukhta") {
-      if (form.sauna_included) sum += (parseFloat(form.sauna_price as string) || 0);
-      if (form.hot_tub_included) sum += (parseFloat(form.hot_tub_price as string) || 0);
+      if (form.sauna_included) sum += (Number(form.sauna_price) || 0);
+      if (form.hot_tub_included) sum += (Number(form.hot_tub_price) || 0);
     }
     return sum;
   }, [form.rent_price, form.property, form.sauna_included, form.sauna_price, form.hot_tub_included, form.hot_tub_price]);
 
   const totalToPay = useMemo(() => {
-    const prepay = parseFloat(form.prepayment) || 0;
+    const prepay = Number(form.prepayment) || 0;
     return Math.max(0, totalRentSum - prepay);
   }, [totalRentSum, form.prepayment]);
 

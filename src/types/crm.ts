@@ -28,6 +28,7 @@ export interface Client {
   is_blacklisted?: boolean | number;
   created_at?: string;
   updated_at?: string;
+  [key: string]: unknown;
 }
 
 export interface Contract {
@@ -72,13 +73,12 @@ export interface Contract {
   bath_time_to?: string;
   is_full_day?: boolean;
   notes?: string;
-  [key: string]: any; // Allow indexing for form mapping
+  [key: string]: unknown;
   created_at?: string;
 }
 
 export interface ContractFormData extends Contract {
   is_prebooking?: boolean;
-  is_full_day?: boolean;
   checkin_at_date?: string;
   checkin_at_time?: string;
   checkout_at_date?: string;

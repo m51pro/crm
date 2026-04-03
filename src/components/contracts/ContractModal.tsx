@@ -49,7 +49,7 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
     const saved = await handleSave(false);
     if (!saved) return;
 
-    const ok = await generatePdfFromHtml(templateId, form, clients);
+    const ok = await generatePdfFromHtml(templateId, form as Record<string, unknown>, clients as unknown as Record<string, unknown>[]);
     if (!ok) toast.error("Не удалось сформировать документ");
   };
 

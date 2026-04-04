@@ -1,39 +1,47 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, Pencil, ArrowLeft, CheckCircle2, FileCode2, Sparkles, Layers, Hash } from "lucide-react";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { API_URL } from "@/lib/api";
+import { Card } from "@/components/ui/card";
+import { Search, Plus, FileText, Clock, Hash } from "lucide-react";
+import { TemplateBuilder } from "@/components/contracts/TemplateBuilder";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
+import { apiFetch, API_URL } from "@/lib/api";
+import { toast } from "sonner";
 
-const TEMPLATES = [
-  { id: "contract_chunga", name: "Договор аренды", subtype: "Чунга-Чанга", lastModified: "01.04.2026", type: "contract", icon: FileText, color: "bg-chunga", dot: "bg-chunga" },
-  { id: "contract_gb", name: "Договор аренды", subtype: "Голубая Бухта", lastModified: "28.03.2026", type: "contract", icon: FileText, color: "bg-bukhta", dot: "bg-bukhta" },
-  { id: "invoice", name: "Счёт на оплату", subtype: "Универсальный", lastModified: "15.02.2026", type: "finance", icon: Layers, color: "bg-emerald-500", dot: "bg-emerald-500" },
-  { id: "act", name: "Акт выполненных работ", subtype: "Универсальный", lastModified: "10.03.2026", type: "finance", icon: FileCode2, color: "bg-indigo-500", dot: "bg-indigo-500" },
-];
-
-const VARIABLES = [
-  { category: "Клиент", vars: ["{{client.full_name}}", "{{client.phone}}", "{{client.inn}}", "{{client.passport}}"] },
-  { category: "Договор", vars: ["{{contract.number}}", "{{contract.date}}", "{{contract.checkin}}", "{{contract.checkout}}", "{{contract.days}}"] },
-  { category: "Объект", vars: ["{{property.name}}", "{{cottage.name}}", "{{cottage.capacity}}"] },
-  { category: "Финансы", vars: ["{{contract.rent_price}}", "{{contract.prepayment}}", "{{contract.total_due}}"] },
-  { category: "Предприятие", vars: ["{{company.name}}", "{{company.director}}", "{{company.inn}}", "{{company.bank}}"] },
-];
-
-const DEFAULT_TEXTS: Record<string, string> = {
-  contract_chunga: "ДОГОВОР АРЕНДЫ № {{contract.number}}\nот {{contract.date}}\n\n{{company.name}} в лице директора {{company.director}}, именуемый «Арендодатель», и {{client.full_name}}, паспорт {{client.passport}}, именуемый «Арендатор», заключили настоящий договор:\n\n1. ПРЕДМЕТ ДОГОВОРА\nАрендодатель передает Арендатору коттедж {{cottage.name}} (база {{property.name}}) с {{contract.checkin}} по {{contract.checkout}} ({{contract.days}} ночей).\nВместимость: {{cottage.capacity}} чел.\n\n2. ОПЛАТА\nСтоимость: {{contract.rent_price}} руб.\nПредоплата: {{contract.prepayment}} руб.\nК доплате: {{contract.total_due}} руб.",
-};
+interface TemplateInfo {
+  id: string;
+  title: string;
+  updated_at: string;
+  target_property: string;
+  client_type: string;
+}
 
 export default function TemplatesSettings() {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [content, setContent] = useState("");
-  const [numSettings, setNumSettings] = useState({ prefix: "ДГ", startNum: "221" });
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // --- Состояния для управления шаблонами ---
+  const [search, setSearch] = useState("");
+  const [templates, setTemplates] = useState<TemplateInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBuilderMode, setIsBuilderMode] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
 
+  // --- Состояния для нумерации договоров ---
+  const [numSettings, setNumSettings] = useState({ prefix: "ДГ", startNum: "221" });
+
+  // Загрузка динамических шаблонов
+  const fetchTemplates = () => {
+    setIsLoading(true);
+    apiFetch("/templates")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setTemplates(data.data);
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  };
+
+  // Загрузка настроек нумерации
   useEffect(() => {
     fetch(`${API_URL}/settings`).then(r => r.json()).then(data => {
       if (data.contract_prefix || data.contract_start_num) {
@@ -44,6 +52,12 @@ export default function TemplatesSettings() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (!isBuilderMode) {
+      fetchTemplates();
+    }
+  }, [isBuilderMode]);
 
   const saveNumSettings = async () => {
     try {
@@ -59,129 +73,87 @@ export default function TemplatesSettings() {
     } catch (e) { toast.error("Ошибка сохранения"); }
   };
 
-  useEffect(() => {
-    if (editingId) setContent(DEFAULT_TEXTS[editingId] || "Текст шаблона пуст. Выберите переменные справа.");
-  }, [editingId]);
-
-  const insertVariable = (varString: string) => {
-    if (!textareaRef.current) return;
-    const start = textareaRef.current.selectionStart;
-    const end = textareaRef.current.selectionEnd;
-    const newText = content.substring(0, start) + varString + content.substring(end);
-    setContent(newText);
-    setTimeout(() => { textareaRef.current!.focus(); textareaRef.current!.setSelectionRange(start + varString.length, start + varString.length); }, 0);
-  };
-
-  const renderPreview = (text: string) => {
-    return text.split('\n').map((line, i) => <p key={i} className="min-h-[1.5em]">{
-      line.split(/(\{\{[^}]+\}\})/g).map((part, j) => {
-        if (part.startsWith('{{') && part.endsWith('}}')) {
-          let mockValue = "[?]";
-          if (part.includes("client.full_name")) mockValue = "Иванов И. И.";
-          if (part.includes("contract.number")) mockValue = "2026-001";
-          if (part.includes("cottage.name")) mockValue = "«Фамильный»";
-          if (part.includes("contract.total_due")) mockValue = "15 000";
-          if (part.includes("company.name")) mockValue = "ООО Чунга-Чанга";
-          return <span key={j} className="bg-accent/10 border border-accent/20 text-accent px-[3px] rounded-md font-semibold">{mockValue}</span>;
-        }
-        return part;
-      })
-    }</p>);
-  };
-
-  if (editingId) {
-    const template = TEMPLATES.find(t => t.id === editingId);
+  // Если включен режим редактора, показываем только его
+  if (isBuilderMode) {
     return (
-      <div className="flex flex-col h-[calc(100vh-80px)] fixed inset-3 bg-card z-50 rounded-3xl overflow-hidden shadow-2xl border border-border animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-8 py-5 border-b border-border shrink-0">
-          <div className="flex items-center gap-6">
-            <Button variant="ghost" size="icon" className="h-10 w-10 bg-muted rounded-2xl" onClick={() => setEditingId(null)}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <Badge variant="secondary" className="rounded-xl text-[10px] mb-1">{template?.type === 'contract' ? 'Договор' : 'Финансы'} — {template?.subtype}</Badge>
-              <h2 className="font-heading text-xl font-black">{template?.name}</h2>
-            </div>
-          </div>
-          <Button onClick={() => { toast.success("Шаблон сохранен"); setEditingId(null); }} className="h-12 px-8 rounded-2xl bg-accent hover:bg-accent/90 text-accent-foreground shadow-md shadow-accent/20 font-bold">
-            <CheckCircle2 className="h-5 w-5 mr-2" /> Сохранить
-          </Button>
-        </div>
-
-        <div className="flex flex-1 overflow-hidden">
-          <div className="w-[55%] border-r border-border flex flex-col relative">
-            <textarea ref={textareaRef} value={content} onChange={(e) => setContent(e.target.value)}
-              className="absolute inset-0 w-full h-full p-8 resize-none outline-none font-mono text-sm leading-relaxed bg-transparent custom-scrollbar caret-accent" spellCheck={false} />
-          </div>
-          <div className="w-[45%] flex flex-col">
-            <div className="flex-[0.35] min-h-[250px] flex flex-col border-b border-border">
-              <div className="px-6 py-4 border-b border-border shrink-0"><h3 className="font-bold flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent" /> Переменные</h3></div>
-              <ScrollArea className="flex-1 custom-scrollbar">
-                <div className="p-6 space-y-6">
-                  {VARIABLES.map(cat => (
-                    <div key={cat.category} className="space-y-3">
-                      <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{cat.category}</div>
-                      <div className="flex flex-wrap gap-2">
-                        {cat.vars.map(v => (
-                          <button key={v} onClick={() => insertVariable(v)}
-                            className="bg-muted border border-border hover:border-accent hover:bg-accent/10 hover:text-accent px-2.5 py-1.5 rounded-xl text-[12px] font-mono font-medium text-muted-foreground transition-all">{v}</button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
-            <div className="flex-[0.65] flex flex-col">
-              <div className="px-6 py-4 shrink-0 flex items-center justify-between">
-                <span className="font-bold text-[13px] uppercase tracking-wider">Превью</span>
-                <span className="flex h-2 w-2 relative"><span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative rounded-full h-2 w-2 bg-emerald-500"></span></span>
-              </div>
-              <ScrollArea className="flex-1 px-8 pb-8 custom-scrollbar">
-                <div className="bg-white border rounded-2xl shadow-sm p-8 min-h-[400px] text-[13px] leading-relaxed text-slate-900 font-serif">
-                  {content ? renderPreview(content) : <span className="text-muted-foreground italic">Начните печатать...</span>}
-                </div>
-              </ScrollArea>
-            </div>
-          </div>
-        </div>
+      <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+         <TemplateBuilder onBack={() => setIsBuilderMode(false)} templateId={editingTemplateId} />
       </div>
     );
   }
 
+  const filteredTemplates = templates.filter(t => t.title?.toLowerCase().includes(search.toLowerCase()));
+
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-8">
-        <h3 className="text-xl font-heading font-bold">Печатные формы</h3>
-        <p className="text-muted-foreground mt-1 max-w-2xl">Настройте шаблоны документов для автозаполнения из CRM.</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {TEMPLATES.map((t) => {
-          const Icon = t.icon;
-          return (
-            <div key={t.id} className="group relative bg-card border border-border/50 rounded-3xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-              <div className={cn("absolute top-0 left-0 w-full h-1 opacity-50 group-hover:opacity-100 transition-opacity", t.color)} />
-              <div className="flex items-start gap-5">
-                <div className="mt-1 w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-muted group-hover:scale-110 transition-transform duration-300 border border-border/50">
-                  <Icon className="h-6 w-6 text-muted-foreground group-hover:text-foreground transition-colors" />
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-12">
+      
+      {/* 1. Блок динамических шаблонов */}
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-xl font-heading font-bold">Печатные формы</h3>
+            <p className="text-muted-foreground mt-1 max-w-2xl">Создавайте и настраивайте шаблоны документов для автозаполнения.</p>
+          </div>
+          <Button onClick={() => { setEditingTemplateId(null); setIsBuilderMode(true); }} className="bg-accent text-accent-foreground hover:bg-accent/90 rounded-2xl px-6 h-11 font-semibold shadow-md shadow-accent/20">
+            <Plus className="h-4 w-4 mr-2" /> Создать шаблон
+          </Button>
+        </div>
+
+        <div className="relative w-full max-w-md mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по шаблонам..."
+            className="pl-9 h-11 rounded-xl bg-background border-border/50"
+          />
+        </div>
+
+        {isLoading ? (
+           <div className="flex items-center justify-center py-12 text-muted-foreground">Загрузка...</div>
+        ) : filteredTemplates.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground opacity-60 bg-muted/20 border border-border/50 rounded-2xl">
+            <FileText className="h-12 w-12 mb-4" />
+            <p className="text-lg font-medium">Шаблоны не найдены</p>
+            <p className="text-sm mt-1">Добавьте первый шаблон договоров, счетов или актов.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 transition-all">
+            {filteredTemplates.map(t => (
+              <Card 
+                key={t.id} 
+                className="rounded-2xl p-5 border border-border/40 hover:border-accent/50 hover:bg-card/80 cursor-pointer transition-all shadow-sm group"
+                onClick={() => { setEditingTemplateId(t.id); setIsBuilderMode(true); }}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0 group-hover:bg-accent/20 transition-colors">
+                    <FileText className="h-5 w-5 text-accent" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm truncate" title={t.title || "Без названия"}>
+                      {t.title || "Без названия"}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground opacity-80">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Обновлено: {format(new Date(t.updated_at), 'dd MMM yyyy', { locale: ru })}</span>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <span className="px-2 py-0.5 rounded bg-muted/50 text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                        {t.target_property === 'all' ? 'Везде' : t.target_property}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2"><span className={cn("w-2 h-2 rounded-full", t.dot)} /><span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{t.subtype}</span></div>
-                  <h4 className="text-lg font-bold mb-1">{t.name}</h4>
-                  <p className="text-[13px] text-muted-foreground font-medium mb-6">Изменён: {t.lastModified}</p>
-                  <Button onClick={() => setEditingId(t.id)} variant="outline" className="w-full justify-between rounded-2xl hover:border-accent hover:text-accent h-11 font-semibold">
-                    <span>Редактировать шаблон</span><Pencil className="h-4 w-4 opacity-50 group-hover:opacity-100" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="mt-12 h-px bg-border/50" />
+      <div className="h-px bg-border/50" />
 
-      <div className="mt-12">
+      {/* 2. Блок настроек нумерации */}
+      <div>
         <div className="mb-8">
           <h3 className="text-xl font-heading font-bold flex items-center gap-2">
             <Hash className="h-5 w-5 text-accent" /> Нумерация договоров
@@ -222,6 +194,7 @@ export default function TemplatesSettings() {
           </Button>
         </div>
       </div>
+      
     </div>
   );
 }

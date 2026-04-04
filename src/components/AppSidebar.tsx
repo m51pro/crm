@@ -9,7 +9,6 @@ const navItems = [
   { title: "Шахматка", path: "/", icon: CalendarDays },
   { title: "Клиенты", path: "/clients", icon: Users },
   { title: "Договоры", path: "/contracts", icon: FileText },
-  { title: "Шаблоны", path: "/templates", icon: FileText },
   { title: "Настройки", path: "/settings", icon: Settings },
 ];
 

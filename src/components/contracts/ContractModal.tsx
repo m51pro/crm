@@ -1,4 +1,4 @@
-import { Check, ChevronDown, FileDown, Mail } from "lucide-react";
+import { Check, ChevronDown, FileDown, Mail, Download } from "lucide-react";
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter 
 } from "@/components/ui/dialog";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ClientDrawer from "../clients/ClientDrawer";
 import { generatePdfFromHtml } from "@/lib/documentGenerator";
+import { API_URL } from "@/lib/api";
 
 import { useContractForm } from "@/hooks/useContractForm";
 import { MainSection } from "./modal/MainSection";
@@ -52,6 +53,44 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
     const ok = await generatePdfFromHtml(templateId, form as Record<string, unknown>, clients as unknown as Record<string, unknown>[]);
     if (!ok) toast.error("Не удалось сформировать документ");
   };
+
+  const handleDownloadPdf = async (templateId: string) => {
+    // Сохраняем перед генерацией
+    const saved = await handleSave(false);
+    if (!saved) return;
+
+    const toastId = toast.loading("Генерация PDF...");
+    try {
+      const res = await fetch(`${API_URL}/templates/${templateId}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contract_id: contract?.id || form.id || form.contract_number })
+      });
+
+      if (!res.ok) throw new Error("Ошибка сервера");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      
+      const fileName = `${templateId === 'schet' ? 'Schet' : templateId === 'akt' ? 'Akt' : 'Dogovor'}_${form.contract_number || 'draft'}.pdf`;
+      a.download = fileName;
+      
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success("Документ PDF готов", { id: toastId });
+    } catch (error) {
+      console.error(error);
+      toast.error("Не удалось скачать PDF", { id: toastId });
+    }
+  };
+
+  const downloadContract = handleDownloadPdf;
 
   const getStatusBadge = () => {
     const opt = statusOptions.find(o => o.value === form.status);
@@ -156,20 +195,49 @@ export default function ContractModal({ open, onClose, contract, onSaved }: Prop
                     <ChevronDown className="h-3 w-3 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent align="start" className="w-64 bg-zinc-950 border-white/10 text-white p-2">
                   {templates.length > 0 ? templates.map(t => (
-                    <DropdownMenuItem 
-                      key={t.id} 
-                      onClick={() => handleGenerateDocument(t.id)}
-                      className="cursor-pointer"
-                    >
-                      {t.title || "Документ"} (PDF)
-                    </DropdownMenuItem>
+                    <div key={t.id} className="mb-2 last:mb-0 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                      <div className="px-2 py-1 text-[10px] font-black uppercase text-zinc-500 tracking-widest">{t.title}</div>
+                      <DropdownMenuItem 
+                        onClick={() => handleDownloadPdf(t.id)}
+                        className="cursor-pointer gap-3 hover:bg-white/5 focus:bg-white/5 rounded-md py-2"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                          <FileDown className="h-4 w-4 text-red-500" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold">Скачать PDF</span>
+                          <span className="text-[10px] text-zinc-400">Официальный документ</span>
+                        </div>
+                      </DropdownMenuItem>
+                    </div>
                   )) : (
-                    <DropdownMenuItem disabled>Нет шаблонов</DropdownMenuItem>
+                    <DropdownMenuItem disabled className="text-zinc-500 text-center py-4">Нет доступных шаблонов</DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 rounded-lg">
+                    <Download className="h-4 w-4" />
+                    Скачать документ
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-zinc-950 border-white/10 text-white shadow-2xl p-1">
+                  <DropdownMenuItem onClick={() => downloadContract('rental_agreement')} className="cursor-pointer focus:bg-accent/15 focus:text-accent rounded-md">
+                    Договор на проживание
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => downloadContract('schet')} className="cursor-pointer focus:bg-accent/15 focus:text-accent rounded-md">
+                    Счёт на оплату
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => downloadContract('akt')} className="cursor-pointer focus:bg-accent/15 focus:text-accent rounded-md">
+                    Акт выполненных работ
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Button variant="outline" className="gap-2 rounded-lg"><Mail className="h-4 w-4" /> Email</Button>
             </div>
             <div className="flex items-center gap-3">

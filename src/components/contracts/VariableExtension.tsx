@@ -17,7 +17,7 @@ declare module '@tiptap/core' {
 
 const VariableComponent = (props: NodeViewProps) => {
   const { id, label } = props.node.attrs
-  const storage = (props.editor.storage as any).variable || {}
+  const storage = (props.editor.storage as { variable?: { stampBase64?: string; signatureBase64?: string } }).variable || {}
   
   const isStamp = id === 'my_stamp'
   const isSignature = id === 'my_signature'

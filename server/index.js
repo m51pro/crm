@@ -5,6 +5,13 @@ import sqlite3 from "sqlite3";
 import path from "path";
 import { randomUUID } from "crypto";
 import { fileURLToPath } from "url";
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { NumberToWordsRu } = require('number-to-words-ru');
+
+import Handlebars from 'handlebars';
+import puppeteer from 'puppeteer';
+import { numberToWords } from './utils/numberToWords.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -711,7 +718,6 @@ app.get("/api/templates", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 app.get("/api/templates/:id", async (req, res) => {
   try {
     const template = await db.get("SELECT * FROM templates WHERE id = ?", [req.params.id]);
@@ -721,6 +727,16 @@ app.get("/api/templates/:id", async (req, res) => {
     template.versions = template.versions_json ? JSON.parse(template.versions_json) : [];
     
     res.json({ success: true, data: template });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/templates/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.run("DELETE FROM templates WHERE id = ?", [id]);
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -759,6 +775,200 @@ app.post("/api/templates", async (req, res) => {
 
     res.json({ success: true, id: templateId });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Функция форматирования чисел в денежный формат (например: 304000 -> "304 000,00")
+function formatMoney(n) {
+  const num = parseFloat(n) || 0;
+  return num.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace('.', ',');
+}
+
+// Функция для сокращения ФИО (например: "Иванов Иван Иванович" -> "Иванов И.И.")
+function getShortName(fullName) {
+  if (!fullName) return '';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  if (parts.length === 2) return `${parts[0]} ${parts[1][0]}.`;
+  return `${parts[0]} ${parts[1][0]}.${parts[2][0]}.`;
+}
+
+// Помощники для дат
+function formatDate(date) {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function formatShortDate(date) {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('ru-RU');
+}
+
+app.post("/api/templates/:templateId/generate", async (req, res) => {
+  try {
+    const { templateId } = req.params;
+    const { contract_id } = req.body;
+
+    // 1. Получаем шаблон
+    const template = await db.get("SELECT * FROM templates WHERE id = ?", [templateId]);
+    if (!template) return res.status(404).json({ error: "Шаблон не найден" });
+
+    // 2. Получаем данные договора и клиента
+    const contract = await db.get(`
+      SELECT c.*, cl.first_name, cl.last_name, cl.middle_name, cl.org_name, cl.inn as client_inn,
+             cl.passport_series, cl.passport_number, cl.registration_address, cl.client_type as cl_type
+      FROM contracts c
+      LEFT JOIN clients cl ON c.client_id = cl.id
+      WHERE c.id = ?
+    `, [contract_id]);
+    if (!contract) return res.status(404).json({ error: "Договор не найден" });
+
+    // 3. Получаем глобальные настройки компании
+    const settingsRows = await db.all("SELECT * FROM settings");
+    const globalSettings = settingsRows.reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {});
+
+    const totalAmount = contract.total || 0;
+    const remaining = totalAmount - (contract.prepayment || 0);
+    const checkinDate = contract.checkin_at || null;
+    const checkoutDate = contract.checkout_at || null;
+
+    // 4. Подготовка переменных для Handlebars
+    const vars = {
+      // Данные документа
+      doc_number: contract.contract_number,
+      doc_date: contract.contract_date || formatShortDate(new Date()),
+      doc_amount: formatMoney(totalAmount),
+      doc_amount_words: NumberToWordsRu.convert(totalAmount, { currency: 'rub', convertMinusSignToWord: false }),
+      doc_prepayment: formatMoney(contract.prepayment || 0),
+      doc_remaining: formatMoney(remaining),
+      doc_remaining_words: NumberToWordsRu.convert(remaining, { currency: 'rub', convertMinusSignToWord: false }),
+      
+      // Даты и время
+      deal_start: formatShortDate(checkinDate),
+      deal_end: formatShortDate(checkoutDate),
+      deal_end_full: formatDate(checkoutDate),
+      check_in_time: contract.check_in_hour ? `${contract.check_in_hour}:00` : "14:00",
+      check_out_time: contract.check_out_hour ? `${contract.check_out_hour}:00` : "12:00",
+      days: contract.days,
+
+      // Клиент
+      client_name: contract.client_name,
+      client_name_short: getShortName(contract.client_name),
+      client_phone: contract.client_phone,
+      client_inn: contract.client_inn,
+      client_passport: `${contract.passport_series || ""} ${contract.passport_number || ""}`.trim(),
+      client_address: contract.registration_address || "",
+      client_dob: contract.birth_date || "",
+      dob: contract.birth_date || "",
+
+      // Компания (из настроек)
+      my_name: globalSettings.company_full_name || "ООО Чунга-Чанга",
+      my_inn: globalSettings.company_inn || "",
+      my_address: globalSettings.company_address || "",
+      my_phone: globalSettings.company_phone || "",
+      my_fax: globalSettings.company_fax || "",
+
+      // Налоги и прочее (НДС 5% включен в стоимость)
+      vat_rate: "5",
+      vat_amount: formatMoney(totalAmount * 5 / 105),
+      services_count: "1",
+
+      // Объекты
+      property_name: contract.property === 'chunga_changa' ? "Чунга-Чанга" : "Голубая Бухта",
+      cottage_name: contract.cottage_id,
+
+      // Массив услуг для цикла {{#each services_list}}
+      services_list: [
+        {
+          index: 1,
+          name: `Услуги по временному размещению в коттедже ${contract.cottage_id} с ${formatShortDate(checkinDate)} по ${formatShortDate(checkoutDate)} по договору №${contract.contract_number}`,
+          qty: "1",
+          unit: "усл",
+          price: formatMoney(totalAmount),
+          sum: formatMoney(totalAmount)
+        }
+      ]
+    };
+
+    // 5. Рендеринг через Handlebars
+    const hbTemplate = Handlebars.compile(template.html_content);
+    const renderedHtml = hbTemplate(vars);
+
+    // 6. Генерация PDF через Puppeteer
+    const browser = await puppeteer.launch({ 
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox'] 
+    });
+    
+    try {
+      const page = await browser.newPage();
+
+      // Устанавливаем HTML содержимое с внедренными шрифтами
+      const htmlWithFonts = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+            body { 
+              font-family: 'Roboto', Arial, sans-serif; 
+              font-size: 11pt; 
+              line-height: 1.4;
+              margin: 0;
+              padding: 0;
+            }
+            /* Правило для того, чтобы таблицы всегда растягивались на всю ширину страницы */
+            table { 
+              width: 100% !important; 
+              border-collapse: collapse; 
+              margin-bottom: 10pt;
+            }
+            /* Правило для блоков, которые должны быть разнесены по краям (г. Мурманск и Дата) */
+            .flex-spread {
+              display: flex !important;
+              justify-content: space-between !important;
+              width: 100% !important;
+            }
+            /* Сброс границ для невидимых таблиц */
+            .no-border, .no-border td {
+              border: none !important;
+            }
+            /* Общие стили для таблиц с данными */
+            th, td { border: 1pt solid black; padding: 5pt; vertical-align: top; }
+            .indent-paragraph { text-indent: 1.25cm; margin-bottom: 0.5em; }
+          </style>
+        </head>
+        <body>
+          ${renderedHtml}
+        </body>
+        </html>
+      `;
+      await page.setContent(htmlWithFonts, { waitUntil: 'networkidle0' });
+
+      // Генерируем PDF
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '15mm',
+          right: '10mm',
+          bottom: '15mm',
+          left: '20mm'
+        }
+      });
+
+      // Отправляем файл
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="document.pdf"`);
+      res.send(pdfBuffer);
+    } finally {
+      await browser.close();
+    }
+
+  } catch (error) {
+    console.error("DOCX Gen Error:", error);
     res.status(500).json({ error: error.message });
   }
 });

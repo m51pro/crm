@@ -62,7 +62,7 @@ const MOCK_DATA = {
   doc_date: "1 апреля 2026 г.",
   doc_amount: "45 000",
   doc_amount_words: "Сорок пять тысяч рублей 00 копеек",
-  vat_amount: "7 500",
+  vat_amount: "14 476,19",
   vat_amount_words: "Семь тысяч пятьсот рублей 00 копеек",
   doc_prepayment: "15 000",
   deal_start: "10.05.2026",
@@ -84,16 +84,22 @@ const MOCK_DATA = {
   client_signatory: "Иванов И.И.",
   client_basis: "Устава",
 
-  my_short_name: "Чунга-Чанга",
-  my_name: 'ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ "ЧУНГА-ЧАНГА"',
-  my_inn: "2315214040",
-  my_kpp: "231501001",
-  my_ogrn: "1192375052327",
-  my_address: "Краснодарский край, г. Новороссийск, ул. Советов, д. 1",
-  my_postal: "353900, г. Новороссийск, ул. Советов, д. 1",
-  my_phone: "+7 (861) 712-34-56",
-  my_signatory_role: "Директор",
-  my_city: "Геленджик",
+  my_short_name: "ООО «Золото Арктики»",
+  my_name: 'Общество с ограниченной ответственностью «Золото Арктики»',
+  my_inn: "5105013870",
+  my_kpp: "510501001",
+  my_ogrn: "1215100000158",
+  my_address: "184433, Мурманская область, Печенгский район, г. Заполярный, ул. Ленина, д.1А, помещение 34",
+  my_postal: "183038, г. Мурманск, пер. Терский, д. З",
+  my_phone: "(815-2) 99-44-21",
+  my_signatory_role: "Генеральный директор",
+  my_signatory_name: "Сташ Екатерина Александровна",
+  my_bank: "МУРМАНСКОЕ ОТДЕЛЕНИЕ N8627 ПАО СБЕРБАНК",
+  my_bik: "044705615",
+  my_account: "40702810941710000190",
+  my_corr: "30101810300000000615",
+  my_city: "Мурманск",
+  my_fax: "(815-2) 99-49-49",
 
   property_name: "Голубая Бухта",
   cottage_name: "Фрегат",
@@ -102,6 +108,19 @@ const MOCK_DATA = {
   sauna_price: "3000",
   sauna_time: "18:00 - 21:00",
   hot_tub_included: false,
+  property_address: "г. Тест, ул. Тестовая, 1",
+
+  deal_days: "8",
+  checkin_time: "17ч. 00м.",
+  checkout_time: "14ч. 00м.",
+  doc_remaining: "304 000",
+  doc_remaining_words: "Триста четыре тысячи рублей 00 копеек",
+  client_email: "client@example.com",
+
+  vat_rate: "5",
+  services_count: "1",
+  deal_end_full: "29 марта 2026 г.",
+  client_name_short: "Иванов И.И.",
 
   // ДАННЫЕ ДЛЯ ЦИКЛОВ #each
   services_list: [
@@ -117,6 +136,34 @@ const MOCK_DATA = {
 };
 
 const PRESETS = {
+  rental_agreement: {
+    title: "Договор на проживание (ГБ)",
+    html: `
+      <h1 style="text-align: center;">ДОГОВОР № <span data-type="variable" data-id="doc_number"></span></h1>
+      <div class="flex-spread">
+        <span>г. Мурманск</span>
+        <span><span data-type="variable" data-id="doc_date"></span>г.</span>
+      </div>
+      
+      <p><strong><span data-type="variable" data-id="my_name"></span></strong>, именуемый в дальнейшем "Исполнитель", с одной стороны, и
+      <strong><span data-type="variable" data-id="client_name"></span></strong>, именуемый в дальнейшем "Заказчик", с другой стороны, заключили настоящий договор о нижеследующем:</p>
+
+      <h3>1. ПРЕДМЕТ ДОГОВОРА</h3>
+      <p class="indent-paragraph">1.1. Исполнитель обязуется предоставить Заказчику услуги по проживанию в коттедже <strong><span data-type="variable" data-id="cottage_name"></span></strong>,
+      расположенном по адресу: <span data-type="variable" data-id="property_address"></span>.</p>
+      <p class="indent-paragraph">1.2. Срок проживания: с <span data-type="variable" data-id="deal_start"></span> по <span data-type="variable" data-id="deal_end"></span> 
+      (<span data-type="variable" data-id="deal_days"></span> суток).</p>
+
+      <h3>2. СТОИМОСТЬ И ПОРЯДОК РАСЧЕТОВ</h3>
+      <p class="indent-paragraph">2.1. Общая стоимость услуг составляет <strong><span data-type="variable" data-id="doc_amount"></span> руб.</strong> 
+      (<span data-type="variable" data-id="doc_amount_words"></span>).</p>
+      <p class="indent-paragraph">2.2. Сумма внесенной предоплаты: <span data-type="variable" data-id="doc_prepayment"></span> руб.</p>
+      <p class="indent-paragraph">2.3. Остаток к оплате при заезде: <strong><span data-type="variable" data-id="doc_remaining"></span> руб.</strong> 
+      (<span data-type="variable" data-id="doc_remaining_words"></span>).</p>
+
+      <h3>3. РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h3>
+    `
+  },
   act: {
     title: "Акт об оказании услуг",
     html: `
@@ -189,6 +236,205 @@ const PRESETS = {
         </tr>
       </table>
     `
+  },
+  schet: {
+    title: "Счёт на оплату",
+    html: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; background: #fff; }
+  .page { width: 210mm; min-height: 297mm; padding: 15mm 15mm 15mm 20mm; margin: 0 auto; background: #fff; }
+  .bank-block { border: 1px solid #000; margin-bottom: 8pt; display: table; width: 100%; border-collapse: collapse; }
+  .bank-row { display: table-row; }
+  .bank-left { display: table-cell; border-right: 1px solid #000; padding: 4pt 6pt; width: 68%; vertical-align: top; }
+  .bank-right { display: table-cell; padding: 4pt 6pt; vertical-align: top; width: 32%; }
+  .bank-label { font-size: 8pt; color: #555; border-top: 1px solid #000; padding-top: 2pt; margin-top: 3pt; }
+  .bank-value { font-size: 10pt; font-weight: bold; margin-bottom: 1pt; }
+  .bank-subrow { border-top: 1px solid #000; }
+  .bank-bik-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2pt; }
+  .sn-label { font-size: 8pt; color: #555; margin-right: 4pt; }
+  .sn-value { font-size: 10pt; font-weight: bold; }
+  .invoice-title { font-size: 14pt; font-weight: bold; margin: 10pt 0 8pt 0; }
+  .parties-block { font-size: 10pt; margin-bottom: 10pt; line-height: 1.5; }
+  .parties-block b { font-weight: bold; }
+  .services-table { width: 100%; border-collapse: collapse; margin-bottom: 4pt; font-size: 10pt; }
+  .services-table th { border: 1px solid #000; padding: 5pt 4pt; text-align: center; font-weight: bold; background: #f5f5f5; font-size: 9pt; }
+  .services-table td { border: 1px solid #000; padding: 5pt 4pt; vertical-align: top; }
+  .services-table td.num  { text-align: center; width: 28pt; }
+  .services-table td.qty  { text-align: center; width: 42pt; }
+  .services-table td.unit { text-align: center; width: 36pt; }
+  .services-table td.price{ text-align: right;  width: 72pt; }
+  .services-table td.sum  { text-align: right;  width: 72pt; }
+  .totals-table { width: 100%; border-collapse: collapse; margin-bottom: 8pt; }
+  .totals-table td { padding: 2pt 4pt; font-size: 10pt; }
+  .totals-table td.label { text-align: right; color: #333; width: 75%; }
+  .totals-table td.amount { text-align: right; font-weight: bold; width: 25%; border-bottom: 1px solid #000; }
+  .totals-table tr.grand td { font-size: 11pt; font-weight: bold; padding-top: 4pt; }
+  .summary-line { border-top: 2px solid #000; padding-top: 5pt; margin-bottom: 3pt; font-size: 10pt; }
+  .summary-words { font-size: 10pt; font-weight: bold; margin-bottom: 20pt; }
+  .signatures { display: flex; gap: 40pt; margin-top: 10pt; }
+  .sig-block { display: flex; align-items: center; gap: 12pt; font-size: 10pt; }
+  .sig-role { white-space: nowrap; line-height: 1.3; font-size: 9pt; }
+  .sig-line { width: 80pt; border-bottom: 1px solid #000; height: 18pt; display: flex; align-items: flex-end; justify-content: center; font-size: 9pt; padding-bottom: 1pt; }
+  .sig-image { max-height: 40pt; object-fit: contain; mix-blend-mode: multiply; }
+  @media print { .page { padding: 15mm 15mm 15mm 20mm; } @page { size: A4; margin: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bank-block">
+    <div class="bank-row">
+      <div class="bank-left">
+        <div class="bank-value">{{my_bank}}</div>
+        <div class="bank-label">Банк получателя</div>
+        <div class="bank-subrow" style="margin-top:4pt;padding-top:4pt;">
+          <span style="font-size:9pt;">ИНН {{my_inn}}</span>&nbsp;&nbsp;&nbsp;<span style="font-size:9pt;">КПП {{my_kpp}}</span>
+        </div>
+        <div class="bank-value" style="margin-top:2pt;">{{my_name}}</div>
+        <div class="bank-label">Получатель</div>
+      </div>
+      <div class="bank-right">
+        <div class="bank-bik-row"><span class="sn-label">БИК</span><span class="sn-value">{{my_bik}}</span></div>
+        <div style="border-top:1px solid #000;padding-top:3pt;margin-bottom:3pt;">
+          <span class="sn-label">Сч. №</span><span class="sn-value" style="font-size:9pt;">{{my_corr}}</span>
+        </div>
+        <div class="bank-label" style="margin-bottom:3pt;">Корр. счёт</div>
+        <div style="border-top:1px solid #000;padding-top:3pt;">
+          <span class="sn-label">Сч. №</span><span class="sn-value" style="font-size:9pt;">{{my_account}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="invoice-title">Счет на оплату № {{doc_number}} от {{doc_date}}</div>
+  <div class="parties-block">
+    <b>Поставщик:</b>&nbsp; {{my_name}} ИНН {{my_inn}}, КПП {{my_kpp}}<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{my_address}}<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;тел.: {{my_phone}}{{#if my_fax}}, факс: {{my_fax}}{{/if}}<br>
+    <b>Покупатель:</b>&nbsp; {{client_name}}
+  </div>
+  <table class="services-table">
+    <thead>
+      <tr><th class="num">№</th><th>Товары (работы, услуги)</th><th class="qty">Кол-во</th><th class="unit">Ед.</th><th class="price">Цена</th><th class="sum">Сумма</th></tr>
+    </thead>
+    <tbody>
+      {{#each services_list}}
+      <tr><td class="num">{{index}}</td><td>{{name}}</td><td class="qty">{{qty}}</td><td class="unit">{{unit}}</td><td class="price">{{price}}</td><td class="sum">{{sum}}</td></tr>
+      {{else}}
+      <tr><td class="num">1</td><td>Услуги по временному размещению в коттедже {{cottage_name}} с {{deal_start}} по {{deal_end}} по договору №{{doc_number}}</td><td class="qty">1</td><td class="unit">усл</td><td class="price">{{doc_amount}}</td><td class="sum">{{doc_amount}}</td></tr>
+      {{/each}}
+    </tbody>
+  </table>
+  <table class="totals-table">
+    <tr><td class="label">Итого:</td><td class="amount">{{doc_amount}}</td></tr>
+    <tr><td class="label">С учетом (НДС) {{vat_rate}}%</td><td class="amount" style="font-weight:bold;color:#c00;">{{vat_amount}}</td></tr>
+    <tr class="grand"><td class="label">Всего к оплате:</td><td class="amount">{{doc_amount}}</td></tr>
+  </table>
+  <div class="summary-line">Всего наименований {{services_count}}, на сумму {{doc_amount}} руб.</div>
+  <div class="summary-words">{{doc_amount_words}}</div>
+  <div class="signatures">
+    <div class="sig-block">
+      <div class="sig-role">Генеральный<br>директор</div>
+      <div class="sig-line">{{#if my_signature}}<img src="{{my_signature}}" class="sig-image" alt="подпись">{{/if}}</div>
+      <div style="font-size:10pt;">/{{my_signatory_name}}/</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-role">Бухгалтер</div>
+      <div class="sig-line">{{#if my_signature}}<img src="{{my_signature}}" class="sig-image" alt="подпись">{{/if}}</div>
+      <div style="font-size:10pt;">/{{my_signatory_name}}/</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>`
+  },
+  akt: {
+    title: "Акт выполненных работ",
+    html: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; background: #fff; }
+  .page { width: 210mm; min-height: 297mm; padding: 15mm 15mm 15mm 20mm; margin: 0 auto; background: #fff; }
+  .act-title { font-size: 14pt; font-weight: bold; margin-bottom: 10pt; }
+  .parties-block { font-size: 10pt; margin-bottom: 10pt; line-height: 1.6; }
+  .services-table { width: 100%; border-collapse: collapse; margin-bottom: 4pt; font-size: 10pt; }
+  .services-table th { border: 1px solid #000; padding: 5pt 4pt; text-align: center; font-weight: bold; background: #f5f5f5; font-size: 9pt; }
+  .services-table td { border: 1px solid #000; padding: 5pt 4pt; vertical-align: top; }
+  .services-table td.num  { text-align: center; width: 28pt; }
+  .services-table td.qty  { text-align: center; width: 42pt; }
+  .services-table td.unit { text-align: center; width: 36pt; }
+  .services-table td.price{ text-align: right;  width: 72pt; }
+  .services-table td.sum  { text-align: right;  width: 72pt; }
+  .totals-table { width: 100%; border-collapse: collapse; margin-bottom: 8pt; }
+  .totals-table td { padding: 2pt 4pt; font-size: 10pt; }
+  .totals-table td.label  { text-align: right; width: 75%; }
+  .totals-table td.amount { text-align: right; font-weight: bold; width: 25%; border-bottom: 1px solid #000; }
+  .totals-table tr.grand td { font-size: 11pt; font-weight: bold; padding-top: 4pt; }
+  .completion-text { font-size: 10pt; margin: 12pt 0 16pt 0; line-height: 1.5; }
+  .summary-line { border-top: 2px solid #000; padding-top: 5pt; margin-bottom: 3pt; font-size: 10pt; }
+  .summary-words { font-size: 10pt; font-weight: bold; margin-bottom: 24pt; }
+  .signatures-table { width: 100%; border-collapse: collapse; margin-top: 10pt; }
+  .signatures-table td { width: 50%; padding: 0 8pt 0 0; vertical-align: top; font-size: 10pt; }
+  .sig-party-title { font-weight: bold; margin-bottom: 6pt; font-size: 10pt; }
+  .sig-party-info { font-size: 9pt; margin-bottom: 8pt; line-height: 1.4; color: #333; }
+  .sig-row { display: flex; align-items: flex-end; gap: 8pt; margin-top: 6pt; }
+  .sig-role-label { font-size: 9pt; white-space: nowrap; line-height: 1.3; }
+  .sig-line { flex: 1; border-bottom: 1px solid #000; height: 20pt; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 1pt; }
+  .sig-image { max-height: 40pt; object-fit: contain; mix-blend-mode: multiply; }
+  .sig-name-label { font-size: 9pt; white-space: nowrap; }
+  @media print { .page { padding: 15mm 15mm 15mm 20mm; } @page { size: A4; margin: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="act-title">Акт № {{doc_number}} от {{deal_end_full}}</div>
+  <div class="parties-block"><b>Исполнитель:</b>&nbsp; {{my_name}}<br><b>Заказчик:</b>&nbsp; {{client_name}}</div>
+  <table class="services-table">
+    <thead>
+      <tr><th class="num">№</th><th>Наименование работ, услуг</th><th class="qty">Кол-во</th><th class="unit">Ед.</th><th class="price">Цена</th><th class="sum">Сумма</th></tr>
+    </thead>
+    <tbody>
+      {{#each services_list}}
+      <tr><td class="num">{{index}}</td><td>{{name}}</td><td class="qty">{{qty}}</td><td class="unit">{{unit}}</td><td class="price">{{price}}</td><td class="sum">{{sum}}</td></tr>
+      {{else}}
+      <tr><td class="num">1</td><td>Услуги по временному размещению в коттедже {{cottage_name}} с {{deal_start}} по {{deal_end}} по договору №{{doc_number}}</td><td class="qty">1</td><td class="unit">усл</td><td class="price">{{doc_amount}}</td><td class="sum">{{doc_amount}}</td></tr>
+      {{/each}}
+    </tbody>
+  </table>
+  <table class="totals-table">
+    <tr><td class="label">Итого:</td><td class="amount">{{doc_amount}}</td></tr>
+    <tr><td class="label">С учетом (НДС) {{vat_rate}}%</td><td class="amount" style="font-weight:bold;color:#c00;">{{vat_amount}}</td></tr>
+    <tr class="grand"><td class="label">Всего к оплате:</td><td class="amount">{{doc_amount}}</td></tr>
+  </table>
+  <div class="completion-text">Вышеперечисленные услуги выполнены полностью и в срок. Заказчик претензий по объему, качеству и срокам оказания услуг не имеет.</div>
+  <div class="summary-line">Всего наименований {{services_count}}, на сумму {{doc_amount}} руб.</div>
+  <div class="summary-words">{{doc_amount_words}}</div>
+  <table class="signatures-table">
+    <tr>
+      <td>
+        <div class="sig-party-title">ИСПОЛНИТЕЛЬ</div>
+        <div class="sig-party-info">{{my_signatory_role}} {{my_name}}</div>
+        <div class="sig-row">
+          <div class="sig-line">{{#if my_signature}}<img src="{{my_signature}}" class="sig-image" alt="">{{/if}}</div>
+          <div class="sig-name-label">/{{my_signatory_name}}/</div>
+        </div>
+        {{#if my_stamp}}<div style="margin-top:6pt;"><img src="{{my_stamp}}" style="max-height:70pt;mix-blend-mode:multiply;opacity:0.85;" alt="печать"></div>{{/if}}
+      </td>
+      <td>
+        <div class="sig-party-title">ЗАКАЗЧИК</div>
+        <div class="sig-party-info">{{client_name}}</div>
+        <div class="sig-row"><div class="sig-line"></div><div class="sig-name-label">/{{client_name_short}}/</div></div>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>`
   }
 };
 
@@ -227,8 +473,10 @@ const VARIABLE_GROUPS = [
       { id: 'client_account', label: 'Расчетный счет' },
       { id: 'client_corr', label: 'Корр. счет' },
       { id: 'client_passport', label: 'Паспортные данные' },
+      { id: 'client_email', label: 'E-mail клиента' },
       { id: 'client_signatory', label: 'ФИО Подписанта' },
       { id: 'client_basis', label: 'Действует на основании' },
+      { id: 'client_name_short', label: 'ФИО клиента (сокр.)' },
     ]
   },
   {
@@ -243,10 +491,19 @@ const VARIABLE_GROUPS = [
       { id: 'doc_amount_words', label: 'Сумма прописью' },
       { id: 'vat_amount_words', label: 'НДС прописью' },
       { id: 'doc_prepayment', label: 'Сумма предоплаты' },
+      { id: 'doc_remaining', label: 'Остаток оплаты' },
+      { id: 'doc_remaining_words', label: 'Остаток прописью' },
       { id: 'deal_start', label: 'Дата начала' },
       { id: 'deal_end', label: 'Дата окончания' },
+      { id: 'deal_days', label: 'Общее кол-во дней' },
+      { id: 'checkin_time', label: 'Время заезда' },
+      { id: 'checkout_time', label: 'Время выезда' },
       { id: 'guest_count', label: 'Кол-во гостей' },
       { id: 'parent_invoice_number', label: 'Номер счета основания' },
+      { id: 'vat_rate', label: 'Ставка НДС' },
+      { id: 'vat_amount', label: 'Сумма НДС' },
+      { id: 'services_count', label: 'Количество услуг' },
+      { id: 'deal_end_full', label: 'Дата выезда (полностью)' },
     ]
   },
   {
@@ -263,7 +520,13 @@ const VARIABLE_GROUPS = [
       { id: 'my_postal', label: 'Почтовый адрес' },
       { id: 'my_phone', label: 'Контактный телефон' },
       { id: 'my_signatory_role', label: 'Должность рук.' },
+      { id: 'my_signatory_name', label: 'ФИО руководителя' },
+      { id: 'my_bank', label: 'Банк компании' },
+      { id: 'my_bik', label: 'БИК компании' },
+      { id: 'my_account', label: 'Расчетный счет комп.' },
+      { id: 'my_corr', label: 'Корр. счет комп.' },
       { id: 'my_city', label: 'Город' },
+      { id: 'my_fax', label: 'Факс' },
     ]
   },
   {
@@ -274,6 +537,7 @@ const VARIABLE_GROUPS = [
       { id: 'property_name', label: 'Название базы' },
       { id: 'cottage_name', label: 'Название дома' },
       { id: 'cottage_capacity', label: 'Вместимость дома' },
+      { id: 'property_address', label: 'Адрес базы' },
       { id: 'sauna_price', label: 'Стоимость бани' },
       { id: 'sauna_time', label: 'Время бани' },
     ]
@@ -322,9 +586,10 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
     stampBase64: "",
     signatureBase64: ""
   });
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
-    if (!templateId) return;
+    if (!templateId || hasLoaded) return;
     setIsLoading(true);
     fetch(`${API_URL}/templates/${templateId}`)
       .then(res => res.json())
@@ -334,6 +599,7 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
           const html = data.data.html_content || DEFAULT_CONTENT;
           setContent(html);
           setPageSettings(prev => ({ ...prev, ...data.data.settings }));
+          setHasLoaded(true);
           if (editorInstance) {
             editorInstance.commands.setContent(html);
           }
@@ -341,7 +607,7 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
       })
       .catch(err => console.error(err))
       .finally(() => setIsLoading(false));
-  }, [templateId, editorInstance]);
+  }, [templateId, editorInstance, hasLoaded]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -395,47 +661,73 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
 
   const livePreviewHtml = useMemo(() => {
     try {
-      // Универсальное регулярное выражение для обработки переменных Tiptap
+      // 1. Превращаем Tiptap-ноды в Handlebars-переменные для рендера
       const templateString = content.replace(/<span\s+[^>]*data-type="variable"[^>]*>.*?<\/span>/g, (match) => {
         const idMatch = match.match(/data-id="([^"]+)"/);
         const id = idMatch ? idMatch[1] : '';
+        
+        // Специальная обработка для картинок (Печать / Подпись)
         if (id === 'my_stamp' || id === 'my_signature') {
-           const src = id === 'my_stamp' ? pageSettings.stampBase64 : pageSettings.signatureBase64;
-           if (src) return `<img src="${src}" style="max-height: 60px; object-fit: contain; mix-blend-mode: multiply; vertical-align: middle;" />`;
+          const src = id === 'my_stamp' ? pageSettings.stampBase64 : pageSettings.signatureBase64;
+          if (src) return `<img src="${src}" style="max-height: 80px; mix-blend-mode: multiply; vertical-align: middle;" />`;
+          return `<span style="color: #94a3b8; border: 1px dashed #cbd5e1; padding: 2px 4px; font-size: 10px;">[${id === 'my_stamp' ? 'Печать' : 'Подпись'}]</span>`;
         }
-        return idMatch ? `{{${idMatch[1]}}}` : match;
+        
+        return id ? `{{${id}}}` : match;
       });
       
+      // 2. Компилируем и рендерим через Handlebars
       const template = Handlebars.compile(templateString);
       return template(MOCK_DATA);
     } catch (e) {
-      return "<div class='text-red-500 font-bold'>Ошибка рендера шаблона. Проверьте синтаксис.</div>";
+      console.error("Preview Error:", e);
+      return "<div class='p-4 text-red-500 bg-red-50 rounded-lg'><b>Ошибка предпросмотра:</b> Проверьте правильность расстановки переменных {{ }}</div>";
     }
   }, [content, pageSettings.stampBase64, pageSettings.signatureBase64]);
 
   const insertVariable = (id: string, label: string) => {
     if (!editorInstance) return;
     if (id === 'signatures_table') {
-      editorInstance.commands.chessInsertBlock({ html: `
-        <table style="width: 100%; border-collapse: collapse;">
-          <tbody>
-            <tr>
-              <td style="width: 50%; border: none; padding: 12px 8px; vertical-align: top;">
-                <p><strong>ИСПОЛНИТЕЛЬ</strong></p>
-                <p>{{my_name}}</p>
-                <p>________________ / {{my_signatory_role}} /</p>
-                <p>{{my_signature}} {{my_stamp}}</p>
-              </td>
-              <td style="width: 50%; border: none; padding: 12px 8px; vertical-align: top;">
-                <p><strong>ЗАКАЗЧИК</strong></p>
-                <p>{{client_name}}</p>
-                <p>________________ / {{client_name}} /</p>
-                <p>{{doc_date}}</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      `});
+      editorInstance.chain().focus().insertContent([
+        {
+          type: 'table',
+          content: [
+            {
+              type: 'tableRow',
+              content: [
+                {
+                  type: 'tableCell',
+                  attrs: { colspan: 1, rowspan: 1, colwidth: [330] },
+                  content: [
+                    { type: 'paragraph', content: [{ type: 'text', text: 'ИСПОЛНИТЕЛЬ', marks: [{ type: 'bold' }] }] },
+                    { type: 'paragraph', content: [{ type: 'variable', attrs: { id: 'my_name', label: 'Мое ФИО' } }] },
+                    { type: 'paragraph', content: [
+                      { type: 'text', text: '________________ / ' },
+                      { type: 'variable', attrs: { id: 'my_signatory_name', label: 'Подписант' } },
+                      { type: 'text', text: ' /' }
+                    ]},
+                    { type: 'paragraph', content: [
+                      { type: 'variable', attrs: { id: 'my_signature', label: 'Подпись' } },
+                      { type: 'text', text: ' ' },
+                      { type: 'variable', attrs: { id: 'my_stamp', label: 'Печать' } }
+                    ]}
+                  ]
+                },
+                {
+                  type: 'tableCell',
+                  attrs: { colspan: 1, rowspan: 1, colwidth: [330] },
+                  content: [
+                    { type: 'paragraph', content: [{ type: 'text', text: 'ЗАКАЗЧИК', marks: [{ type: 'bold' }] }] },
+                    { type: 'paragraph', content: [{ type: 'variable', attrs: { id: 'client_name', label: 'ФИО клиента' } }] },
+                    { type: 'paragraph', content: [{ type: 'text', text: '________________ / ________ /' }] },
+                    { type: 'paragraph', content: [{ type: 'text', text: 'Дата: ' }, { type: 'variable', attrs: { id: 'doc_date', label: 'Дата' } }] }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]).run();
     } else if (id === 'services_loop') {
       editorInstance.commands.chessInsertBlock({ html: `
         <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">

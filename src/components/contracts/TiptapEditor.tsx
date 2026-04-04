@@ -179,6 +179,13 @@ export function TiptapEditor({
     },
   });
 
+  // Синхронизация контента извне (без зацикливания)
+  React.useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content);
+    }
+  }, [content, editor]);
+
   React.useEffect(() => {
     if (editor?.storage) {
       const storage = editor.storage as { variable?: { stampBase64?: string; signatureBase64?: string } };

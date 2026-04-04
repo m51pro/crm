@@ -7,11 +7,25 @@ import { toast } from "sonner";
 
 export default function CompanyDetails() {
   const [form, setForm] = useState({
-    name: "ООО «Чунга-Чанга»", inn: "1234567890", kpp: "123456789", ogrn: "1234567890123",
-    address: "г. Геленджик, ул. Туристическая, 12", director: "Иванов И.И.",
-    bank: "ПАО СБЕРБАНК", raschetSchet: "40702810000000000000",
-    korrSchet: "30101810000000000000", bik: "044525225",
-    emailChunga: "admin@chunga-changa.ru", emailBukhta: "admin@golubayabukhta.ru"
+    name: "Общество с ограниченной ответственностью «Золото Арктики»",
+    shortName: "ООО «Золото Арктики»",
+    inn: "5105013870",
+    kpp: "510501001",
+    ogrn: "1215100000158",
+    address: "184433, Мурманская область, Печенгский район, г. Заполярный, ул. Ленина, д.1А, помещение 34",
+    postalAddress: "183038, г. Мурманск, пер. Терский, д. З",
+    director: "Сташ Екатерина Александровна",
+    directorBasis: "Устава",
+    bank: "МУРМАНСКОЕ ОТДЕЛЕНИЕ N8627 ПАО СБЕРБАНК",
+    raschetSchet: "40702810941710000190",
+    korrSchet: "30101810300000000615",
+    bik: "044705615",
+    bankInn: "7707083893",
+    bankKpp: "519002001",
+    phone: "(815-2) 99-44-21",
+    fax: "(815-2) 99-49-49",
+    emailChunga: "admin@chunga-changa.ru",
+    emailBukhta: "admin@golubayabukhta.ru"
   });
 
   const handleChange = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
@@ -50,15 +64,23 @@ export default function CompanyDetails() {
       <section>
         <SectionTitle title="Юридические данные" icon={Building2} desc="Основная информация об организации для документов." />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-          <div className="space-y-2 col-span-full">
-            <Label className="text-muted-foreground ml-1">Название организации</Label>
+          <div className="space-y-2 col-span-full md:col-span-2">
+            <Label className="text-muted-foreground ml-1">Полное название организации</Label>
             <Input value={form.name} onChange={e => handleChange("name", e.target.value)} className={inputCn + " text-[15px] font-medium"} />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-muted-foreground ml-1">Сокращенное название</Label>
+            <Input value={form.shortName} onChange={e => handleChange("shortName", e.target.value)} className={inputCn} />
           </div>
           <div className="space-y-2"><Label className="text-muted-foreground ml-1">ИНН</Label><Input value={form.inn} onChange={e => handleChange("inn", e.target.value)} className={inputCn} /></div>
           <div className="space-y-2"><Label className="text-muted-foreground ml-1">КПП</Label><Input value={form.kpp} onChange={e => handleChange("kpp", e.target.value)} className={inputCn} /></div>
           <div className="space-y-2"><Label className="text-muted-foreground ml-1">ОГРН</Label><Input value={form.ogrn} onChange={e => handleChange("ogrn", e.target.value)} className={inputCn} /></div>
           <div className="space-y-2"><Label className="text-muted-foreground ml-1">Директор (ФИО)</Label><Input value={form.director} onChange={e => handleChange("director", e.target.value)} className={inputCn} /></div>
-          <div className="space-y-2 col-span-1 md:col-span-2"><Label className="text-muted-foreground ml-1">Юридический адрес</Label><Input value={form.address} onChange={e => handleChange("address", e.target.value)} className={inputCn} /></div>
+          <div className="space-y-2"><Label className="text-muted-foreground ml-1">Основание (Устава/Доверенности)</Label><Input value={form.directorBasis} onChange={e => handleChange("directorBasis", e.target.value)} className={inputCn} /></div>
+          <div className="space-y-2"><Label className="text-muted-foreground ml-1">Телефон</Label><Input value={form.phone} onChange={e => handleChange("phone", e.target.value)} className={inputCn} /></div>
+          <div className="space-y-2"><Label className="text-muted-foreground ml-1">Факс</Label><Input value={form.fax} onChange={e => handleChange("fax", e.target.value)} className={inputCn} /></div>
+          <div className="space-y-2 col-span-full"><Label className="text-muted-foreground ml-1">Юридический адрес</Label><Input value={form.address} onChange={e => handleChange("address", e.target.value)} className={inputCn} /></div>
+          <div className="space-y-2 col-span-full"><Label className="text-muted-foreground ml-1">Почтовый адрес</Label><Input value={form.postalAddress} onChange={e => handleChange("postalAddress", e.target.value)} className={inputCn} /></div>
         </div>
       </section>
 
@@ -71,6 +93,8 @@ export default function CompanyDetails() {
           <div className="space-y-2 col-span-full"><Label className="text-muted-foreground ml-1">Расчётный счёт</Label><Input value={form.raschetSchet} onChange={e => handleChange("raschetSchet", e.target.value)} className={inputCn + " font-mono"} /></div>
           <div className="space-y-2"><Label className="text-muted-foreground ml-1">Корр. счёт</Label><Input value={form.korrSchet} onChange={e => handleChange("korrSchet", e.target.value)} className={inputCn + " font-mono"} /></div>
           <div className="space-y-2"><Label className="text-muted-foreground ml-1">БИК</Label><Input value={form.bik} onChange={e => handleChange("bik", e.target.value)} className={inputCn + " font-mono"} /></div>
+          <div className="space-y-2"><Label className="text-muted-foreground ml-1">ИНН Банка</Label><Input value={form.bankInn} onChange={e => handleChange("bankInn", e.target.value)} className={inputCn + " font-mono"} /></div>
+          <div className="space-y-2"><Label className="text-muted-foreground ml-1">КПП Банка</Label><Input value={form.bankKpp} onChange={e => handleChange("bankKpp", e.target.value)} className={inputCn + " font-mono"} /></div>
         </div>
       </section>
 

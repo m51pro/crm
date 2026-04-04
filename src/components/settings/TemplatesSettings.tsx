@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Search, Plus, FileText, Clock, Hash } from "lucide-react";
+import { Search, Plus, FileText, Clock } from "lucide-react";
 import { TemplateBuilder } from "@/components/contracts/TemplateBuilder";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { apiFetch, API_URL } from "@/lib/api";
-import { toast } from "sonner";
+import { apiFetch } from "@/lib/api";
 
 interface TemplateInfo {
   id: string;
@@ -26,9 +24,6 @@ export default function TemplatesSettings() {
   const [isBuilderMode, setIsBuilderMode] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
 
-  // --- Состояния для нумерации договоров ---
-  const [numSettings, setNumSettings] = useState({ prefix: "ДГ", startNum: "221" });
-
   // Загрузка динамических шаблонов
   const fetchTemplates = () => {
     setIsLoading(true);
@@ -41,37 +36,11 @@ export default function TemplatesSettings() {
       .finally(() => setIsLoading(false));
   };
 
-  // Загрузка настроек нумерации
-  useEffect(() => {
-    fetch(`${API_URL}/settings`).then(r => r.json()).then(data => {
-      if (data.contract_prefix || data.contract_start_num) {
-        setNumSettings({
-          prefix: data.contract_prefix || "ДГ",
-          startNum: data.contract_start_num || "221"
-        });
-      }
-    });
-  }, []);
-
   useEffect(() => {
     if (!isBuilderMode) {
       fetchTemplates();
     }
   }, [isBuilderMode]);
-
-  const saveNumSettings = async () => {
-    try {
-      await fetch(`${API_URL}/settings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contract_prefix: numSettings.prefix,
-          contract_start_num: numSettings.startNum
-        })
-      });
-      toast.success("Настройки нумерации сохранены");
-    } catch (e) { toast.error("Ошибка сохранения"); }
-  };
 
   // Если включен режим редактора, показываем только его
   if (isBuilderMode) {
@@ -148,51 +117,6 @@ export default function TemplatesSettings() {
             ))}
           </div>
         )}
-      </div>
-
-      <div className="h-px bg-border/50" />
-
-      {/* 2. Блок настроек нумерации */}
-      <div>
-        <div className="mb-8">
-          <h3 className="text-xl font-heading font-bold flex items-center gap-2">
-            <Hash className="h-5 w-5 text-accent" /> Нумерация договоров
-          </h3>
-          <p className="text-muted-foreground mt-1 max-w-2xl">Настройте формат автоматического номера для новых договоров.</p>
-        </div>
-
-        <div className="bg-card border border-border/50 rounded-3xl p-8 max-w-2xl">
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            <div className="space-y-2">
-              <Label className="text-muted-foreground ml-1">Префикс (2 буквы)</Label>
-              <Input 
-                value={numSettings.prefix} 
-                onChange={e => setNumSettings(p => ({ ...p, prefix: e.target.value.toUpperCase().slice(0, 2) }))}
-                className="h-12 rounded-2xl bg-muted/20 font-bold text-lg"
-                placeholder="ДГ"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-muted-foreground ml-1">Начать отсчёт с числа</Label>
-              <Input 
-                type="number"
-                value={numSettings.startNum} 
-                onChange={e => setNumSettings(p => ({ ...p, startNum: e.target.value }))}
-                className="h-12 rounded-2xl bg-muted/20 font-bold text-lg"
-                placeholder="221"
-              />
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between p-4 bg-accent/5 border border-accent/10 rounded-2xl mb-8">
-            <div className="text-sm font-medium text-muted-foreground">Пример следующего номера:</div>
-            <div className="text-xl font-black text-accent">{numSettings.prefix}{numSettings.startNum}</div>
-          </div>
-
-          <Button onClick={saveNumSettings} className="w-full h-12 rounded-2xl bg-accent hover:bg-accent/90 text-accent-foreground font-black shadow-lg shadow-accent/20">
-            Сохранить настройки нумерации
-          </Button>
-        </div>
       </div>
       
     </div>

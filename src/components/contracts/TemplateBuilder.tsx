@@ -102,6 +102,18 @@ const MOCK_DATA = {
   sauna_price: "3000",
   sauna_time: "18:00 - 21:00",
   hot_tub_included: false,
+
+  // ДАННЫЕ ДЛЯ ЦИКЛОВ #each
+  services_list: [
+    { index: 1, name: "Проживание в коттедже Фрегат", qty: 1, unit: "усл", price: "45 000", sum: "45 000" },
+    { index: 2, name: "Аренда бани (3 часа)", qty: 1, unit: "шт", price: "3 000", sum: "3 000" },
+    { index: 3, name: "Ранний заезд", qty: 1, unit: "усл", price: "5 000", sum: "5 000" }
+  ],
+  guests_list: [
+    { index: 1, fio: "Иванов Иван Иванович", doc: "Паспорт 45 10 123456" },
+    { index: 2, fio: "Иванова Анна Сергеевна", doc: "Паспорт 45 10 654321" },
+    { index: 3, fio: "Иванов Петр Иванович", doc: "Свид. о рождении I-АЯ 123456" }
+  ],
 };
 
 const PRESETS = {
@@ -188,7 +200,17 @@ Handlebars.registerHelper('incline', function(fio, targetCase) {
 });
 
 const VARIABLE_GROUPS = [
-  { id: "blocks", label: "ГОТОВЫЕ БЛОКИ", icon: <Sparkles className="h-4 w-4 text-cyan-400" />, variables: [] as { id: string; label: string }[] },
+  { 
+    id: "blocks", 
+    label: "ГОТОВЫЕ БЛОКИ", 
+    icon: <Sparkles className="h-4 w-4 text-cyan-400" />, 
+    variables: [
+      { id: 'services_loop', label: 'Таблица услуг (Цикл)' },
+      { id: 'guests_loop', label: 'Список гостей (Цикл)' },
+      { id: 'signatures_table', label: 'Блок подписей (2 колонки)' },
+      { id: 'requisites_table', label: 'Реквизиты (2 колонки)' },
+    ] 
+  },
   {
     id: "client",
     label: "КОНТРАГЕНТ",
@@ -414,16 +436,56 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
           </tbody>
         </table>
       `});
-    } else if (id === 'requisites_block') {
+    } else if (id === 'services_loop') {
       editorInstance.commands.chessInsertBlock({ html: `
-        <table style="width: 100%; border-collapse: collapse;">
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <thead>
+            <tr style="background-color: #f8fafc;">
+              <th style="border: 1px solid #000; padding: 5px; text-align: center; width: 40px; font-size: 12px;">№</th>
+              <th style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px;">Наименование услуги</th>
+              <th style="border: 1px solid #000; padding: 5px; text-align: center; width: 100px; font-size: 12px;">Сумма (руб.)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each services_list}}
+            <tr>
+              <td style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 11px;">{{index}}</td>
+              <td style="border: 1px solid #000; padding: 5px; font-size: 11px;">{{name}}</td>
+              <td style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 11px;">{{sum}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      `});
+    } else if (id === 'guests_loop') {
+      editorInstance.commands.chessInsertBlock({ html: `
+        <p style="margin-top: 15px;"><strong>Список проживающих:</strong></p>
+        <p style="font-size: 11px; line-height: 1.4;">
+          {{#each guests_list}}
+            {{index}}. {{fio}} ({{doc}})<br>
+          {{/each}}
+        </p>
+      `});
+    } else if (id === 'requisites_block' || id === 'requisites_table') {
+      editorInstance.commands.chessInsertBlock({ html: `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
           <tbody>
             <tr>
-              <td style="width: 50%; border: 1px solid #000; padding: 8px; vertical-align: top;">
-                <strong>Исполнитель</strong><br>{{my_name}}<br>{{my_inn}} / {{my_kpp}}<br>{{my_address}}
+              <td style="width: 50%; border: 1px solid #000; padding: 12px; vertical-align: top; font-size: 10px;">
+                <p><strong>ИСПОЛНИТЕЛЬ</strong></p>
+                <div style="margin-top: 8px;">
+                  {{my_name}}<br>
+                  ИНН {{my_inn}} / КПП {{my_kpp}}<br>
+                  {{my_address}}
+                </div>
               </td>
-              <td style="width: 50%; border: 1px solid #000; padding: 8px; vertical-align: top;">
-                <strong>Заказчик</strong><br>{{client_name}}<br>{{client_inn}}<br>{{client_address}}
+              <td style="width: 50%; border: 1px solid #000; padding: 12px; vertical-align: top; font-size: 10px;">
+                <p><strong>ЗАКАЗЧИК</strong></p>
+                <div style="margin-top: 8px;">
+                  {{client_name}}<br>
+                  ИНН {{client_inn}}<br>
+                  {{client_address}}
+                </div>
               </td>
             </tr>
           </tbody>
@@ -705,8 +767,12 @@ export function TemplateBuilder({ onBack, templateId }: TemplateBuilderProps) {
                           {filtered.map((v) => (
                             <div
                               key={v.id}
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('application/x-tiptap-variable', JSON.stringify({ id: v.id, label: v.label }));
+                              }}
                               onClick={() => insertVariable(v.id, v.id)}
-                              className="group cursor-pointer flex flex-col border border-white/5 bg-zinc-950/50 hover:bg-zinc-900 hover:border-yellow-500/30 p-3.5 rounded-xl transition-all active:scale-[0.97] shadow-sm"
+                              className="group cursor-grab active:cursor-grabbing flex flex-col border border-white/5 bg-zinc-950/50 hover:bg-zinc-900 hover:border-yellow-500/30 p-3.5 rounded-xl transition-all active:scale-[0.97] shadow-sm"
                               title={v.id}
                             >
                               <span className="text-xs font-bold text-slate-200 group-hover:text-yellow-500 transition-colors">

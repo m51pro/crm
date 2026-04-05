@@ -57,11 +57,11 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
     try {
       const payload = {
         ...editData,
-        cottage_id: editData.cottageId ?? editData.cottage_id,
+        cottage_id: editData.cottageId,
         cottageId: undefined,
-        client_name: editData.clientName ?? editData.client_name,
+        client_name: editData.clientName,
         clientName: undefined,
-        client_phone: editData.phone ?? editData.client_phone,
+        client_phone: editData.phone,
         phone: undefined,
         guest_count: editData.guestCount ?? editData.guest_count,
         guestCount: undefined,

@@ -6,7 +6,7 @@
   "main": "electron/main.js",
   "scripts": {
     "postinstall": "electron-builder install-app-deps",
-    "dev": "concurrently -k \"vite\" \"npm:dev:electron\"",
+    "dev": "vite",
     "dev:web": "vite",
     "dev:electron": "wait-on http://localhost:8080 && electron .",
     "build": "vite build",

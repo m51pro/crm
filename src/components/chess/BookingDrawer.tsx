@@ -166,8 +166,8 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
                 </Label>
                 {isEditing ? (
                   <Input 
-                    value={editData.clientName || editData.client_name || ""}
-                    onChange={e => setEditData({...editData, clientName: e.target.value, client_name: e.target.value})}
+                   value={editData.clientName || ""}
+                    onChange={e => setEditData({...editData, clientName: e.target.value})}
                     onKeyDown={(e) => e.key === "Enter" && handleSave()}
                     className="rounded-xl font-bold h-12"
                   />

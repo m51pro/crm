@@ -139,8 +139,8 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
                 </Label>
                 {isEditing ? (
                   <Select
-                    value={editData.cottageId || editData.cottage_id || ""}
-                    onValueChange={(val) => setEditData({...editData, cottageId: val, cottage_id: val})}
+                    value={editData.cottageId || ""}
+                    onValueChange={(val) => setEditData({...editData, cottageId: val})}
                   >
                     <SelectTrigger className="rounded-xl font-bold h-12 bg-background border-border">
                       <SelectValue placeholder="Выберите дом" />

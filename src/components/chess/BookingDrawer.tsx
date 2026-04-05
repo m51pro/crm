@@ -182,8 +182,8 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
                 </Label>
                 {isEditing ? (
                   <Input 
-                    value={editData.phone || editData.client_phone || ""}
-                    onChange={e => setEditData({...editData, phone: e.target.value, client_phone: e.target.value})}
+                   value={editData.phone || ""}
+                    onChange={e => setEditData({...editData, phone: e.target.value})}
                     onKeyDown={(e) => e.key === "Enter" && handleSave()}
                     className="rounded-xl font-mono font-bold h-12"
                   />

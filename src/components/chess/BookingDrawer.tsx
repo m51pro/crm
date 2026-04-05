@@ -38,9 +38,9 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
     if (booking) {
       setEditData({
         ...booking,
-        cottageId: booking.cottageId || booking.cottage_id,
-        clientName: booking.clientName || booking.client_name,
-        phone: booking.phone || booking.client_phone,
+        cottageId: booking.cottageId,
+        clientName: booking.clientName,
+        phone: booking.phone,
         guestCount: booking.guestCount ?? booking.guest_count,
         checkInDate: booking.checkInDate || booking.checkin_at,
         checkOutDate: booking.checkOutDate || booking.checkout_at,

@@ -38,9 +38,9 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
     if (booking) {
       setEditData({
         ...booking,
-        cottageId: booking.cottageId || booking.cottage_id,
-        clientName: booking.clientName || booking.client_name,
-        phone: booking.phone || booking.client_phone,
+        cottageId: booking.cottageId,
+        clientName: booking.clientName,
+        phone: booking.phone,
         guestCount: booking.guestCount ?? booking.guest_count,
         checkInDate: booking.checkInDate || booking.checkin_at,
         checkOutDate: booking.checkOutDate || booking.checkout_at,
@@ -57,11 +57,11 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
     try {
       const payload = {
         ...editData,
-        cottage_id: editData.cottageId ?? editData.cottage_id,
+        cottage_id: editData.cottageId,
         cottageId: undefined,
-        client_name: editData.clientName ?? editData.client_name,
+        client_name: editData.clientName,
         clientName: undefined,
-        client_phone: editData.phone ?? editData.client_phone,
+        client_phone: editData.phone,
         phone: undefined,
         guest_count: editData.guestCount ?? editData.guest_count,
         guestCount: undefined,
@@ -139,8 +139,8 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
                 </Label>
                 {isEditing ? (
                   <Select
-                    value={editData.cottageId || editData.cottage_id || ""}
-                    onValueChange={(val) => setEditData({...editData, cottageId: val, cottage_id: val})}
+                    value={editData.cottageId || ""}
+                    onValueChange={(val) => setEditData({...editData, cottageId: val})}
                   >
                     <SelectTrigger className="rounded-xl font-bold h-12 bg-background border-border">
                       <SelectValue placeholder="Выберите дом" />
@@ -166,8 +166,8 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
                 </Label>
                 {isEditing ? (
                   <Input 
-                    value={editData.clientName || editData.client_name || ""}
-                    onChange={e => setEditData({...editData, clientName: e.target.value, client_name: e.target.value})}
+                   value={editData.clientName || ""}
+                    onChange={e => setEditData({...editData, clientName: e.target.value})}
                     onKeyDown={(e) => e.key === "Enter" && handleSave()}
                     className="rounded-xl font-bold h-12"
                   />
@@ -182,8 +182,8 @@ export function BookingDrawer({ booking, onClose, onRefresh }: BookingDrawerProp
                 </Label>
                 {isEditing ? (
                   <Input 
-                    value={editData.phone || editData.client_phone || ""}
-                    onChange={e => setEditData({...editData, phone: e.target.value, client_phone: e.target.value})}
+                   value={editData.phone || ""}
+                    onChange={e => setEditData({...editData, phone: e.target.value})}
                     onKeyDown={(e) => e.key === "Enter" && handleSave()}
                     className="rounded-xl font-mono font-bold h-12"
                   />

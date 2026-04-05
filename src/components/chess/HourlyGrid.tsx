@@ -65,7 +65,7 @@ export function HourlyGrid({ columns, hours, bookings, date, accentClass = "bg-f
 
       const { startIdx, span } = getHourSpan(cInH, cOutH, hours);
       if (span === 0) return;
-      const cottageId = b.cottageId || b.cottage_id;
+      const cottageId = b.cottageId;
       const entry = { ...b, cottageId, colorClass: getBookingColor(i, b.status), startIdx, span };
       const arr = map.get(cottageId) || [];
       arr.push(entry);
